@@ -59,6 +59,11 @@ export function SiteHeader() {
             <Link href="/account" className="text-sm font-medium text-slate-700 hover:text-slate-900">
               Account
             </Link>
+            {session?.user && (
+              <Link href="/admin" className="text-sm font-medium text-teal-600 hover:text-teal-800">
+                Admin
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
