@@ -1,5 +1,6 @@
 import { ProductDetailContent } from '@/components/product-detail-content'
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  return <ProductDetailContent productId={params.id} />
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <ProductDetailContent productId={id} />
 }

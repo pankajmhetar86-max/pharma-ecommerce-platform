@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { ChevronLeft, ShoppingCart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -16,25 +16,13 @@ export function ProductDetailContent({ productId }: { productId: string }) {
   const { data: session } = authClient.useSession()
   const addItem = useMutation(api.cart.addItem)
 
-  const product = useQuery(api.products.getById, {
-    productId: productId as Id<'products'>,
-  })
-  const relatedProducts = useQuery(api.products.related, {
-    productId: productId as Id<'products'>,
-    limit: 4,
-  })
+  const product = useQuery(api.products.getById, productId ? { productId: productId as Id<'products'> } : 'skip')
+  const relatedProducts = useQuery(api.products.related, productId ? { productId: productId as Id<'products'>, limit: 4 } : 'skip')
 
-  const [selectedDosage, setSelectedDosage] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
-    if (product?.dosageOptions[0]) {
-      setSelectedDosage(product.dosageOptions[0])
-    }
-  }, [product?.dosageOptions])
-
   const handleAddToCart = async () => {
-    if (!selectedDosage || !product) {
+    if (!product) {
       return
     }
     if (!session?.user) {
@@ -43,7 +31,7 @@ export function ProductDetailContent({ productId }: { productId: string }) {
     }
     try {
       setIsSubmitting(true)
-      await addItem({ productId: product._id, dosage: selectedDosage, quantity: 1 })
+      await addItem({ productId: product._id, quantity: 1 })
       router.push('/cart')
     } finally {
       setIsSubmitting(false)
@@ -106,30 +94,10 @@ export function ProductDetailContent({ productId }: { productId: string }) {
             </p>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">{product.description}</p>
 
-            <div className="mt-6">
-              <p className="mb-2 text-sm font-semibold text-slate-700">Dosage options</p>
-              <div className="flex flex-wrap gap-2">
-                {product.dosageOptions.map((dosage) => (
-                  <button
-                    key={dosage}
-                    type="button"
-                    onClick={() => setSelectedDosage(dosage)}
-                    className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
-                      selectedDosage === dosage
-                        ? 'bg-sky-600 text-white'
-                        : 'border border-slate-300 text-slate-700 hover:border-sky-300 hover:text-sky-700'
-                    }`}
-                  >
-                    {dosage}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <button
               type="button"
               onClick={() => void handleAddToCart()}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !product.inStock}
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-3 text-sm font-semibold text-white hover:from-emerald-600 hover:to-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ShoppingCart className="h-4 w-4" />
