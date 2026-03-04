@@ -23,8 +23,8 @@ export default defineSchema({
   categories: defineTable({
     name: v.string(),
     icon: v.string(),
-    sortOrder: v.number(),
-  }).index('by_sort_order', ['sortOrder']),
+    sortOrder: v.optional(v.number()),
+  }),
 
   products: defineTable({
     name: v.string(),
@@ -38,6 +38,7 @@ export default defineSchema({
     discount: v.number(),
     inStock: v.boolean(),
     isBestseller: v.boolean(),
+    isVisible: v.optional(v.boolean()), // undefined / true = visible, false = hidden from shop
     searchText: v.string(),
   })
     .index('by_category_and_name', ['category', 'name'])

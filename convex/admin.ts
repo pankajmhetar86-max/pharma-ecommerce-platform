@@ -113,6 +113,55 @@ export const toggleBestseller = mutation({
   },
 })
 
+export const toggleVisibility = mutation({
+  args: { id: v.id('products'), isVisible: v.boolean() },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    await ctx.db.patch(args.id, { isVisible: args.isVisible })
+  },
+})
+
+// ── Categories ────────────────────────────────────────────────────────────────
+
+export const listAdminCategories = query({
+  args: {},
+  handler: async (ctx) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) return null
+    const cats = await ctx.db.query('categories').collect()
+    return cats.sort((a, b) => a.name.localeCompare(b.name))
+  },
+})
+
+export const createCategory = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    return ctx.db.insert('categories', { name: args.name.trim(), icon: 'pill' })
+  },
+})
+
+export const updateCategory = mutation({
+  args: { id: v.id('categories'), name: v.string() },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    await ctx.db.patch(args.id, { name: args.name.trim() })
+  },
+})
+
+export const deleteCategory = mutation({
+  args: { id: v.id('categories') },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    await ctx.db.delete(args.id)
+  },
+})
+
+// ── File storage ──────────────────────────────────────────────────────────────
 // File storage — generates a short-lived signed URL for the client to POST an image to
 export const generateUploadUrl = mutation({
   args: {},

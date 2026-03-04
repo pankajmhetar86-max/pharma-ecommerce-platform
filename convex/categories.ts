@@ -3,6 +3,7 @@ import { query } from './_generated/server'
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query('categories').withIndex('by_sort_order').collect()
+    const cats = await ctx.db.query('categories').collect()
+    return cats.sort((a, b) => a.name.localeCompare(b.name))
   },
 })

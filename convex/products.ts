@@ -31,7 +31,7 @@ export const list = query({
           return searchQuery
         })
         .take(limit)
-      return products
+      return products.filter((p) => p.isVisible !== false)
     }
 
     if (category && category !== 'Bestsellers' && onlyBestsellers) {
@@ -39,7 +39,7 @@ export const list = query({
         .query('products')
         .withIndex('by_category_and_is_bestseller_and_name', (q) => q.eq('category', category).eq('isBestseller', true))
         .take(limit)
-      return products
+      return products.filter((p) => p.isVisible !== false)
     }
 
     if (category && category !== 'Bestsellers') {
@@ -47,7 +47,7 @@ export const list = query({
         .query('products')
         .withIndex('by_category_and_name', (q) => q.eq('category', category))
         .take(limit)
-      return products
+      return products.filter((p) => p.isVisible !== false)
     }
 
     if (onlyBestsellers || category === 'Bestsellers') {
@@ -55,11 +55,11 @@ export const list = query({
         .query('products')
         .withIndex('by_is_bestseller_and_name', (q) => q.eq('isBestseller', true))
         .take(limit)
-      return products
+      return products.filter((p) => p.isVisible !== false)
     }
 
     products = await ctx.db.query('products').order('desc').take(limit)
-    return products
+    return products.filter((p) => p.isVisible !== false)
   },
 })
 
@@ -89,6 +89,8 @@ export const related = query({
       .withIndex('by_category_and_name', (q) => q.eq('category', product.category))
       .take(relatedLimit + 1)
 
-    return relatedProducts.filter((item) => item._id !== product._id).slice(0, relatedLimit)
+    return relatedProducts
+      .filter((item) => item._id !== product._id && item.isVisible !== false)
+      .slice(0, relatedLimit)
   },
 })
