@@ -3,6 +3,8 @@ import './globals.css'
 import { ConvexClientProvider } from './convex-client-provider'
 import { getToken } from '@/lib/auth-server'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Pharma eCommerce Platform',
   description: 'Trusted online pharmaceutical platform with secure authentication and real-time cart sync.',
