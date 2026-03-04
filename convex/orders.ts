@@ -1,4 +1,4 @@
-import { mutation, query } from './_generated/server'
+import { action, internalMutation, mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 
@@ -10,6 +10,52 @@ const getAuthenticatedUserId = async (ctx: ConvexCtx) => {
     throw new Error('Not authenticated')
   }
   return identity.subject
+}
+
+const buildOrderItemsFromCart = async (ctx: MutationCtx, userId: string) => {
+  const cart = await ctx.db
+    .query('carts')
+    .withIndex('by_user_id', (q) => q.eq('userId', userId))
+    .unique()
+
+  if (!cart || cart.items.length === 0) {
+    throw new Error('Cart is empty')
+  }
+
+  const orderItems: Array<{
+    productId: (typeof cart.items)[number]['productId']
+    name: string
+    genericName: string
+    quantity: number
+    unitPrice: number
+    unit: string
+    lineTotal: number
+    image: string
+  }> = []
+
+  for (const cartItem of cart.items) {
+    const product = await ctx.db.get(cartItem.productId)
+    if (!product || !product.inStock) {
+      continue
+    }
+    const lineTotal = Number((product.price * cartItem.quantity).toFixed(2))
+    orderItems.push({
+      productId: product._id,
+      name: product.name,
+      genericName: product.genericName,
+      quantity: cartItem.quantity,
+      unitPrice: product.price,
+      unit: product.unit,
+      lineTotal,
+      image: product.image,
+    })
+  }
+
+  if (orderItems.length === 0) {
+    throw new Error('No valid items found in cart')
+  }
+
+  return { cart, orderItems }
 }
 
 export const listMyOrders = query({
@@ -42,58 +88,14 @@ export const createFromCart = mutation({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthenticatedUserId(ctx)
-    const cart = await ctx.db
-      .query('carts')
-      .withIndex('by_user_id', (q) => q.eq('userId', userId))
-      .unique()
-
-    if (!cart || cart.items.length === 0) {
-      throw new Error('Cart is empty')
-    }
-
-    const orderItems: Array<{
-      productId: (typeof cart.items)[number]['productId']
-      name: string
-      genericName: string
-      dosage: string
-      quantity: number
-      unitPrice: number
-      unit: string
-      lineTotal: number
-      image: string
-    }> = []
-
-    for (const cartItem of cart.items) {
-      const product = await ctx.db.get(cartItem.productId)
-      if (!product || !product.inStock) {
-        continue
-      }
-      if (!product.dosageOptions.includes(cartItem.dosage)) {
-        continue
-      }
-      const lineTotal = Number((product.price * cartItem.quantity).toFixed(2))
-      orderItems.push({
-        productId: product._id,
-        name: product.name,
-        genericName: product.genericName,
-        dosage: cartItem.dosage,
-        quantity: cartItem.quantity,
-        unitPrice: product.price,
-        unit: product.unit,
-        lineTotal,
-        image: product.image,
-      })
-    }
-
-    if (orderItems.length === 0) {
-      throw new Error('No valid items found in cart')
-    }
-
+    const { cart, orderItems } = await buildOrderItemsFromCart(ctx, userId)
     const total = Number(orderItems.reduce((sum, item) => sum + item.lineTotal, 0).toFixed(2))
+
     const orderId = await ctx.db.insert('orders', {
       userId,
       items: orderItems,
       status: 'processing',
+      paymentMethod: 'standard',
       total,
       createdAt: Date.now(),
     })
@@ -105,5 +107,88 @@ export const createFromCart = mutation({
     })
 
     return { orderId }
+  },
+})
+
+export const createPendingCryptoOrder = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthenticatedUserId(ctx)
+    const { cart, orderItems } = await buildOrderItemsFromCart(ctx, userId)
+    const total = Number(orderItems.reduce((sum, item) => sum + item.lineTotal, 0).toFixed(2))
+
+    const orderId = await ctx.db.insert('orders', {
+      userId,
+      items: orderItems,
+      status: 'pending_payment',
+      paymentMethod: 'crypto',
+      total,
+      createdAt: Date.now(),
+    })
+
+    await ctx.db.patch(cart._id, {
+      items: [],
+      total: 0,
+      updatedAt: Date.now(),
+    })
+
+    return { orderId, total }
+  },
+})
+
+export const createNowPaymentsInvoice = action({
+  args: {
+    orderId: v.id('orders'),
+    total: v.number(),
+  },
+  handler: async (_ctx, args) => {
+    const apiKey = process.env.NOWPAYMENTS_API_KEY
+    if (!apiKey) {
+      throw new Error('Payment provider not configured')
+    }
+
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const convexSiteUrl = process.env.CONVEX_SITE_URL
+
+    const response = await fetch('https://api.nowpayments.io/v1/invoice', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        price_amount: args.total,
+        price_currency: 'usd',
+        order_id: args.orderId,
+        order_description: `Pharma order ${args.orderId}`,
+        success_url: `${siteUrl}/orders`,
+        cancel_url: `${siteUrl}/checkout`,
+        ipn_callback_url: convexSiteUrl ? `${convexSiteUrl}/nowpayments-ipn` : undefined,
+      }),
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      console.error('NOWPayments error:', text)
+      throw new Error('Failed to create payment invoice')
+    }
+
+    const data = (await response.json()) as { invoice_url: string }
+    return { invoiceUrl: data.invoice_url }
+  },
+})
+
+export const confirmCryptoPayment = internalMutation({
+  args: {
+    orderId: v.id('orders'),
+    nowPaymentsId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId)
+    if (!order) return
+    await ctx.db.patch(args.orderId, {
+      status: 'paid',
+      nowPaymentsId: args.nowPaymentsId,
+    })
   },
 })

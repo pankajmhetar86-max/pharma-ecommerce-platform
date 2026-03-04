@@ -14,24 +14,16 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
   const router = useRouter()
   const addItem = useMutation(api.cart.addItem)
   const { data: session } = authClient.useSession()
-  const [selectedDosage, setSelectedDosage] = useState(product.dosageOptions[0] ?? '')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleBuyNow = async () => {
-    if (!selectedDosage) {
-      return
-    }
     if (!session?.user) {
       router.push(`/auth/login?next=/products/${product._id}`)
       return
     }
     try {
       setIsSubmitting(true)
-      await addItem({
-        productId: product._id,
-        dosage: selectedDosage,
-        quantity: 1,
-      })
+      await addItem({ productId: product._id, quantity: 1 })
     } finally {
       setIsSubmitting(false)
     }
@@ -53,20 +45,6 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
             {formatPrice(product.price)} per {product.unit}
           </p>
         </Link>
-        <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-          {product.dosageOptions.map((dosage) => (
-            <button
-              key={dosage}
-              type="button"
-              onClick={() => setSelectedDosage(dosage)}
-              className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                selectedDosage === dosage ? 'bg-sky-600 text-white' : 'text-blue-600 hover:bg-blue-50'
-              }`}
-            >
-              {dosage}
-            </button>
-          ))}
-        </div>
       </div>
       <button
         type="button"

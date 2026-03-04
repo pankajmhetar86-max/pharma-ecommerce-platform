@@ -40,15 +40,22 @@ export function OrdersPageContent() {
                   <p className="text-sm font-semibold text-slate-900">Order #{order._id.slice(-8).toUpperCase()}</p>
                   <p className="text-xs text-slate-500">{formatDate(order.createdAt)}</p>
                 </div>
-                <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold capitalize text-sky-700">
-                  {order.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  {order.paymentMethod === 'crypto' && (
+                    <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
+                      Crypto
+                    </span>
+                  )}
+                  <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold capitalize text-sky-700">
+                    {order.status === 'pending_payment' ? 'Pending Payment' : order.status}
+                  </span>
+                </div>
               </div>
               <ul className="mt-3 space-y-2 text-sm">
                 {order.items.map((item) => (
-                  <li key={`${item.productId}-${item.dosage}`} className="flex items-center justify-between">
+                  <li key={item.productId} className="flex items-center justify-between">
                     <span className="text-slate-600">
-                      {item.name} ({item.dosage}) × {item.quantity}
+                      {item.name} × {item.quantity}
                     </span>
                     <span className="font-medium text-slate-900">{formatPrice(item.lineTotal)}</span>
                   </li>

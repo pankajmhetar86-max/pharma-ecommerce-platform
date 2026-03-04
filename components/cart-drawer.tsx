@@ -52,13 +52,13 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             <>
               <ul className="space-y-3">
                 {cart.items.map((item) => (
-                  <li key={`${item.productId}-${item.dosage}`} className="rounded-2xl border border-slate-200 p-3">
+                  <li key={item.productId} className="rounded-2xl border border-slate-200 p-3">
                     <div className="flex gap-3">
                       <img src={item.image} alt={item.name} className="h-14 w-14 rounded-xl border border-slate-100" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-slate-900">{item.name}</p>
                         <p className="text-xs text-slate-500">
-                          {item.dosage} • {formatPrice(item.price)} per {item.unit}
+                          {formatPrice(item.price)} per {item.unit}
                         </p>
                         <div className="mt-2 flex items-center justify-between gap-2">
                           <div className="inline-flex items-center rounded-full border border-slate-200">
@@ -67,7 +67,6 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                               onClick={() =>
                                 void updateQuantity({
                                   productId: item.productId,
-                                  dosage: item.dosage,
                                   quantity: item.quantity - 1,
                                 })
                               }
@@ -82,7 +81,6 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                               onClick={() =>
                                 void updateQuantity({
                                   productId: item.productId,
-                                  dosage: item.dosage,
                                   quantity: item.quantity + 1,
                                 })
                               }
@@ -96,7 +94,7 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                             <span className="text-sm font-semibold text-slate-900">{formatPrice(item.lineTotal)}</span>
                             <button
                               type="button"
-                              onClick={() => void removeItem({ productId: item.productId, dosage: item.dosage })}
+                              onClick={() => void removeItem({ productId: item.productId })}
                               className="text-slate-400 hover:text-red-500"
                               aria-label="Remove item"
                             >

@@ -3,7 +3,7 @@ import { v } from 'convex/values'
 
 const cartItemValidator = v.object({
   productId: v.id('products'),
-  dosage: v.string(),
+  dosage: v.optional(v.string()),
   quantity: v.number(),
 })
 
@@ -11,7 +11,7 @@ const orderItemValidator = v.object({
   productId: v.id('products'),
   name: v.string(),
   genericName: v.string(),
-  dosage: v.string(),
+  dosage: v.optional(v.string()),
   quantity: v.number(),
   unitPrice: v.number(),
   unit: v.string(),
@@ -60,6 +60,7 @@ export default defineSchema({
     userId: v.string(),
     items: v.array(orderItemValidator),
     status: v.union(
+      v.literal('pending_payment'),
       v.literal('pending'),
       v.literal('paid'),
       v.literal('processing'),
@@ -69,5 +70,7 @@ export default defineSchema({
     ),
     total: v.number(),
     createdAt: v.number(),
+    paymentMethod: v.optional(v.union(v.literal('standard'), v.literal('crypto'))),
+    nowPaymentsId: v.optional(v.string()),
   }).index('by_user_id_and_created_at', ['userId', 'createdAt']),
 })
