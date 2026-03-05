@@ -2,8 +2,7 @@
 
 import { KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { X, Plus, Upload, Link as LinkIcon, Loader2, ImageOff, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
-import { useMutation } from 'convex/react'
-import { CATEGORY_LIST } from '@/lib/category-list'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import type { Doc } from '@/convex/_generated/dataModel'
 
@@ -47,7 +46,7 @@ type Props = {
 const EMPTY_FORM: ProductFormData = {
   name: '',
   genericName: '',
-  category: CATEGORY_LIST[0],
+  category: '',
   description: '',
   fullDescription: '',
   price: 0,
@@ -109,12 +108,25 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const [dragOver, setDragOver] = useState(false)
   const [matrixOpen, setMatrixOpen] = useState(!!(initial?.pricingMatrix && initial.pricingMatrix.length > 0))
   const [newDosageForMatrix, setNewDosageForMatrix] = useState('')
+  const [showNewCategory, setShowNewCategory] = useState(false)
+  const [newCategoryInput, setNewCategoryInput] = useState('')
+  const [creatingCategory, setCreatingCategory] = useState(false)
 
   const nameRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const generateUploadUrl = useMutation(api.admin.generateUploadUrl)
   const getUploadedImageUrl = useMutation(api.admin.getUploadedImageUrl)
+  const createCategory = useMutation(api.admin.createCategory)
+  const dbCategories = useQuery(api.admin.listAdminCategories)
+
+  // Set default category once DB categories load (only for new products)
+  useEffect(() => {
+    if (!initial && dbCategories && dbCategories.length > 0 && !form.category) {
+      set('category', dbCategories[0].name)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbCategories])
 
   useEffect(() => {
     nameRef.current?.focus()
@@ -250,6 +262,20 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     }
   }
 
+  const handleCreateCategory = async () => {
+    const name = newCategoryInput.trim()
+    if (!name) return
+    setCreatingCategory(true)
+    try {
+      await createCategory({ name })
+      set('category', name)
+      setNewCategoryInput('')
+      setShowNewCategory(false)
+    } finally {
+      setCreatingCategory(false)
+    }
+  }
+
   const inputClass =
     'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none ring-sky-200 focus:border-sky-400 focus:ring-2 bg-white'
   const labelClass = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500'
@@ -286,11 +312,59 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             {/* Category */}
             <div>
               <label className={labelClass}>Category *</label>
-              <select className={inputClass} value={form.category} onChange={(e) => set('category', e.target.value)}>
-                {CATEGORY_LIST.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  className={`${inputClass} flex-1`}
+                  value={form.category}
+                  onChange={(e) => set('category', e.target.value)}
+                  disabled={dbCategories === undefined}
+                >
+                  {!form.category && <option value="">Select a category...</option>}
+                  {(dbCategories ?? []).map((c) => (
+                    <option key={c._id} value={c.name}>{c.name}</option>
+                  ))}
+                  {/* Show current value if it's not in the DB (legacy data) */}
+                  {form.category && dbCategories && !dbCategories.some((c) => c.name === form.category) && (
+                    <option value={form.category}>{form.category} (not in DB — save to sync)</option>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowNewCategory((v) => !v)}
+                  title="Add new category"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  <Plus className="h-4 w-4" />New
+                </button>
+              </div>
+              {showNewCategory && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    className={`${inputClass} flex-1`}
+                    placeholder="New category name"
+                    value={newCategoryInput}
+                    onChange={(e) => setNewCategoryInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleCreateCategory() } }}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateCategory()}
+                    disabled={creatingCategory || !newCategoryInput.trim()}
+                    className="inline-flex items-center gap-1 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+                  >
+                    {creatingCategory ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowNewCategory(false); setNewCategoryInput('') }}
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Unit */}

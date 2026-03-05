@@ -72,6 +72,7 @@ export const createProduct = mutation({
   handler: async (ctx, args) => {
     const admin = await getAdminUser(ctx)
     if (!admin) throw new Error('Not authorized')
+    await ensureCategoryExists(ctx, args.category)
     const searchText = `${args.name} ${args.genericName} ${args.category} ${args.description}`.toLowerCase()
     return ctx.db.insert('products', { ...args, searchText })
   },
@@ -100,6 +101,7 @@ export const updateProduct = mutation({
   handler: async (ctx, args) => {
     const admin = await getAdminUser(ctx)
     if (!admin) throw new Error('Not authorized')
+    await ensureCategoryExists(ctx, args.category)
     const { id, ...fields } = args
     const searchText = `${fields.name} ${fields.genericName} ${fields.category} ${fields.description}`.toLowerCase()
     await ctx.db.patch(id, { ...fields, searchText })
@@ -132,6 +134,20 @@ export const toggleVisibility = mutation({
     await ctx.db.patch(args.id, { isVisible: args.isVisible })
   },
 })
+
+// Ensures a category with the given name exists in the DB.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function ensureCategoryExists(ctx: any, name: string) {
+  const trimmed = name.trim()
+  if (!trimmed) return
+  const existing = await ctx.db
+    .query('categories')
+    .collect()
+    .then((cats: { name: string }[]) => cats.find((c) => c.name === trimmed))
+  if (!existing) {
+    await ctx.db.insert('categories', { name: trimmed, icon: 'pill' })
+  }
+}
 
 // ── Categories ────────────────────────────────────────────────────────────────
 
