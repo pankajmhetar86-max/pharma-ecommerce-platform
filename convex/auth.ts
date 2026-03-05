@@ -49,6 +49,10 @@ async function sendWelcomeEmail(email: string, name: string | null | undefined) 
 export const createAuth = (ctx: GenericCtx<DataModel>) =>
   betterAuth({
     baseURL: siteUrl,
+    trustedOrigins: [
+      siteUrl,
+      'http://localhost:3000',
+    ].filter(Boolean) as string[],
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
