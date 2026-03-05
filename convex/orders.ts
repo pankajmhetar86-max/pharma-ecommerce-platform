@@ -13,6 +13,11 @@ const getAuthenticatedUserId = async (ctx: ConvexCtx) => {
   return identity.subject
 }
 
+function isIndiaCountry(country: string | undefined) {
+  if (!country) return false
+  return country.toLowerCase().includes('india')
+}
+
 const buildOrderItemsFromCart = async (ctx: MutationCtx, userId: string) => {
   const cart = await ctx.db
     .query('carts')
@@ -64,19 +69,21 @@ const buildOrderItemsFromCart = async (ctx: MutationCtx, userId: string) => {
   return { cart, orderItems }
 }
 
-const billingAddressArg = v.optional(v.object({
-  isNewCustomer: v.boolean(),
-  mobilePhone: v.string(),
-  email: v.string(),
-  dateOfBirth: v.optional(v.string()),
-  firstName: v.string(),
-  lastName: v.string(),
-  streetAddress: v.string(),
-  city: v.string(),
-  country: v.string(),
-  state: v.string(),
-  zipCode: v.string(),
-}))
+const billingAddressArg = v.optional(
+  v.object({
+    isNewCustomer: v.boolean(),
+    mobilePhone: v.string(),
+    email: v.string(),
+    dateOfBirth: v.optional(v.string()),
+    firstName: v.string(),
+    lastName: v.string(),
+    streetAddress: v.string(),
+    city: v.string(),
+    country: v.string(),
+    state: v.string(),
+    zipCode: v.string(),
+  }),
+)
 
 const shippingAddressArg = v.optional(
   v.union(
@@ -93,6 +100,21 @@ const shippingAddressArg = v.optional(
     }),
   ),
 )
+
+function assertIndiaOnlyDelivery(args: {
+  billingAddress?: { country: string } | undefined
+  shippingAddress?: { sameAsBilling: true } | { sameAsBilling: false; country: string } | undefined
+}) {
+  const billingCountry = args.billingAddress?.country
+  if (billingCountry && !isIndiaCountry(billingCountry)) {
+    throw new Error('Delivery is currently available only within India.')
+  }
+
+  const shipping = args.shippingAddress
+  if (shipping && shipping.sameAsBilling === false && !isIndiaCountry(shipping.country)) {
+    throw new Error('Delivery is currently available only within India.')
+  }
+}
 
 export const listMyOrders = query({
   args: {},
@@ -132,31 +154,8 @@ export const createFromCart = mutation({
     billingAddress: billingAddressArg,
     shippingAddress: shippingAddressArg,
   },
-  handler: async (ctx, args) => {
-    const userId = await getAuthenticatedUserId(ctx)
-    const { cart, orderItems } = await buildOrderItemsFromCart(ctx, userId)
-    const total = Number(orderItems.reduce((sum, item) => sum + item.lineTotal, 0).toFixed(2))
-
-    const orderId = await ctx.db.insert('orders', {
-      userId,
-      items: orderItems,
-      status: 'processing',
-      paymentMethod: 'standard',
-      total,
-      createdAt: Date.now(),
-      billingAddress: args.billingAddress,
-      shippingAddress: args.shippingAddress,
-    })
-
-    await ctx.db.patch(cart._id, {
-      items: [],
-      total: 0,
-      updatedAt: Date.now(),
-    })
-
-    await ctx.scheduler.runAfter(0, internal.emails.sendOrderConfirmationEmails, { orderId })
-
-    return { orderId }
+  handler: async () => {
+    throw new Error('Standard checkout is disabled. Please use crypto payment.')
   },
 })
 
@@ -166,6 +165,7 @@ export const createPendingCryptoOrder = mutation({
     shippingAddress: shippingAddressArg,
   },
   handler: async (ctx, args) => {
+    assertIndiaOnlyDelivery(args)
     const userId = await getAuthenticatedUserId(ctx)
     const { cart, orderItems } = await buildOrderItemsFromCart(ctx, userId)
     const total = Number(orderItems.reduce((sum, item) => sum + item.lineTotal, 0).toFixed(2))
