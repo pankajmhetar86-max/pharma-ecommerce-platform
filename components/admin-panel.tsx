@@ -512,7 +512,7 @@ function CategoriesTab() {
                 </tr>
               )}
 
-              {categories.length === 0 && !adding && (
+              {(categories ?? []).length === 0 && !adding && (
                 <tr>
                   <td colSpan={2} className="py-16 text-center text-slate-400">
                     No categories yet. Add your first one!
@@ -520,7 +520,7 @@ function CategoriesTab() {
                 </tr>
               )}
 
-              {categories.map((cat) => (
+              {(categories ?? []).map((cat) => (
                 <tr key={cat._id} className="group hover:bg-slate-50">
                   <td className="px-4 py-3">
                     {editingId === cat._id ? (
