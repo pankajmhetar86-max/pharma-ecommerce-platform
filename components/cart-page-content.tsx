@@ -77,6 +77,7 @@ export function CartPageContent() {
                           <div className="inline-flex items-center rounded-full border border-slate-200">
                             <button
                               type="button"
+                              disabled={item.quantity <= 1}
                               onClick={() =>
                                 void updateQuantity({
                                   productId: item.productId,
@@ -85,7 +86,7 @@ export function CartPageContent() {
                                   pillCount: item.pillCount,
                                 })
                               }
-                              className="p-2 text-slate-600 hover:text-slate-900"
+                              className="p-2 text-slate-600 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
                               aria-label="Decrease quantity"
                             >
                               <Minus className="h-4 w-4" />

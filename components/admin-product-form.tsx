@@ -320,7 +320,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
               <label className={labelClass}>Discount (%)</label>
               <div className="relative">
                 <input type="number" min={0} max={100} className={`${inputClass} pr-7`} placeholder="0"
-                  value={form.discount || ''} onChange={(e) => set('discount', parseFloat(e.target.value) || 0)} />
+                  value={form.discount || ''} onChange={(e) => set('discount', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))} />
                 <span className="pointer-events-none absolute right-3 top-2 text-sm text-slate-400">%</span>
               </div>
             </div>

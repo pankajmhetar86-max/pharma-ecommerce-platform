@@ -44,10 +44,10 @@ function PackageRow({
       </div>
       <div>
         {originalPrice > price && (
-          <p className="text-sm text-slate-400 line-through">${originalPrice.toFixed(2)}</p>
+          <p className="text-sm text-slate-400 line-through">{formatPrice(originalPrice)}</p>
         )}
-        <p className="text-xl font-bold text-slate-900">$ {price.toFixed(2)}</p>
-        <p className="text-sm text-slate-500">$ {perUnit.toFixed(2)} per {unit}</p>
+        <p className="text-xl font-bold text-slate-900">{formatPrice(price)}</p>
+        <p className="text-sm text-slate-500">{formatPrice(perUnit)} per {unit}</p>
       </div>
       <div className="hidden space-y-1 md:block">
         {benefits.map((b) => (
@@ -68,7 +68,7 @@ function PackageRow({
           )}
         </button>
         {savings > 0 && (
-          <p className="text-xs font-semibold text-red-500">save: ${savings.toFixed(2)}</p>
+          <p className="text-xs font-semibold text-red-500">save: {formatPrice(savings)}</p>
         )}
       </div>
     </div>
@@ -203,7 +203,7 @@ export function ProductDetailContent({ productId }: { productId: string }) {
       <section className="pharma-card p-5 md:p-6">
         <div className="flex flex-wrap items-start gap-6">
           <div className="rounded-3xl bg-slate-50 p-6">
-            <img src={product.image} alt={product.imageAlt ?? product.name} className="h-40 w-40 object-contain" />
+            <img src={product.image} alt={product.imageAlt ?? product.name} className="h-40 w-40 object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://placehold.co/200x200/f1f5f9/94a3b8?text=No+Image' }} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">

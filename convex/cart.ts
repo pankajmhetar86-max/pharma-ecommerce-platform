@@ -22,7 +22,7 @@ const calculateCartTotal = async (ctx: MutationCtx, items: Array<CartItem>) => {
     } else {
       const product = await ctx.db.get(item.productId)
       if (!product) continue
-      total += product.price * item.quantity
+      total += (product.price * (1 - (product.discount ?? 0) / 100)) * item.quantity
     }
   }
   return Number(total.toFixed(2))

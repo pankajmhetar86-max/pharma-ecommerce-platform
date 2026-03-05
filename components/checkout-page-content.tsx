@@ -335,7 +335,7 @@ export function CheckoutPageContent() {
             </Field>
 
             {/* First + Last Name */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="First Name:">
                 <input type="text" className={inputClass} value={billing.firstName}
                   onChange={(e) => setBillingField('firstName', e.target.value)} />
@@ -399,9 +399,20 @@ export function CheckoutPageContent() {
           <div className="mt-6">
             <h3 className="mb-4 text-center text-sm font-bold uppercase tracking-widest text-sky-700">Shipping Address</h3>
 
+            {/* "Same as Billing" checkbox - shown first so users can skip the form */}
+            <label className="mb-4 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={shippingSameAsBilling}
+                onChange={(e) => setShippingSameAsBilling(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
+              />
+              Shipping address same as billing
+            </label>
+
             {!shippingSameAsBilling && (
               <div className="space-y-4 mb-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Field label="First Name:">
                     <input type="text" className={inputClass} value={shipping.firstName}
                       onChange={(e) => setShippingField('firstName', e.target.value)} />
@@ -452,16 +463,6 @@ export function CheckoutPageContent() {
               </div>
             )}
 
-            {/* "Same as Billing" checkbox */}
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={shippingSameAsBilling}
-                onChange={(e) => setShippingSameAsBilling(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
-              />
-              Shipping info equals to Billing Info
-            </label>
           </div>
         </div>
 

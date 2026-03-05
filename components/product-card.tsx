@@ -59,8 +59,8 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
           </span>
         )}
         <Link href={`/products/${product._id}`} className="block">
-          <img src={product.image} alt={product.imageAlt ?? product.name} className="mx-auto h-24 w-24 object-contain" />
-          <h3 className="mt-4 text-center text-3xl font-bold text-slate-900 md:text-2xl">{product.name}</h3>
+          <img src={product.image} alt={product.imageAlt ?? product.name} className="mx-auto h-24 w-24 object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://placehold.co/200x200/f1f5f9/94a3b8?text=No+Image' }} />
+          <h3 className="mt-4 text-center text-xl font-bold text-slate-900">{product.name}</h3>
           <p className="mt-1 text-center text-sm text-slate-500">{product.genericName}</p>
           <p className="mt-2 text-center text-lg font-bold text-slate-900">
             {formatPrice(fromPrice.price)} per {fromPrice.perUnit}
