@@ -412,7 +412,7 @@ function OrdersTab() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {orders === undefined ? (
+        {orders === undefined || orders === null ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
           </div>
