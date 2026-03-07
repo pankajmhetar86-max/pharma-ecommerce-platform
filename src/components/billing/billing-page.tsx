@@ -25,7 +25,7 @@ function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: currency.toUpperCase(),
-  }).format(amount / 100)
+  }).format(amount)
 }
 
 export function BillingPage() {
