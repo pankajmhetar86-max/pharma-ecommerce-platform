@@ -170,28 +170,28 @@ const DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
 
 const EMPTY_BILLING: BillingForm = {
   isNewCustomer: true,
-  mobilePhone: '+91',
-  email: '',
-  dobYear: '',
-  dobMonth: '',
-  dobDay: '',
-  firstName: '',
-  lastName: '',
-  streetAddress: '',
-  city: '',
+  mobilePhone: '+919876543210',
+  email: 'test@example.com',
+  dobYear: '1990',
+  dobMonth: 'January',
+  dobDay: '1',
+  firstName: 'John',
+  lastName: 'Doe',
+  streetAddress: '123 Main Street',
+  city: 'Mumbai',
   country: 'IN',
-  state: '',
-  zipCode: '',
+  state: 'Maharashtra',
+  zipCode: '400001',
 }
 
 const EMPTY_SHIPPING: ShippingForm = {
-  firstName: '',
-  lastName: '',
-  streetAddress: '',
-  city: '',
+  firstName: 'John',
+  lastName: 'Doe',
+  streetAddress: '123 Main Street',
+  city: 'Mumbai',
   country: 'IN',
-  state: '',
-  zipCode: '',
+  state: 'Maharashtra',
+  zipCode: '400001',
 }
 
 const inputClass =
