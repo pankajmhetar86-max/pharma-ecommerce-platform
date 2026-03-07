@@ -152,6 +152,32 @@ async function ensureCategoryExists(ctx: any, name: string) {
 
 // ── Categories ────────────────────────────────────────────────────────────────
 
+export const categoryProductCounts = query({
+  args: {},
+  handler: async (ctx) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) return null
+    const products = await ctx.db.query('products').collect()
+    const counts: Record<string, number> = {}
+    for (const p of products) {
+      counts[p.category] = (counts[p.category] ?? 0) + 1
+    }
+    return counts
+  },
+})
+
+export const productsByCategory = query({
+  args: { category: v.string() },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) return null
+    return ctx.db
+      .query('products')
+      .withIndex('by_category_and_name', (q) => q.eq('category', args.category))
+      .collect()
+  },
+})
+
 export const listAdminCategories = query({
   args: {},
   handler: async (ctx) => {

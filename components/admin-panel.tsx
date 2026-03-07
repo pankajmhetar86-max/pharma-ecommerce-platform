@@ -953,8 +953,54 @@ function SliderImageRow({
 
 // ── Categories tab ────────────────────────────────────────────────────────────
 
+function CategoryProductsModal({ category, onClose }: { category: string; onClose: () => void }) {
+  const products = useQuery(api.admin.productsByCategory, { category })
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div className="flex w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl" style={{ maxHeight: '80vh' }}>
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <h3 className="font-bold text-slate-900">
+            Products in <span className="text-teal-700">{category}</span>
+          </h3>
+          <button type="button" onClick={onClose}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {products === undefined || products === null ? (
+            <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-teal-500" /></div>
+          ) : products.length === 0 ? (
+            <p className="py-16 text-center text-sm text-slate-400">No products in this category.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <th className="px-5 py-3">Name</th>
+                  <th className="px-5 py-3">Generic Name</th>
+                  <th className="px-5 py-3 text-right">Price</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(products ?? []).map((p) => (
+                  <tr key={p._id} className="hover:bg-slate-50">
+                    <td className="px-5 py-3 font-medium text-slate-800">{p.name}</td>
+                    <td className="px-5 py-3 text-slate-500">{p.genericName}</td>
+                    <td className="px-5 py-3 text-right text-slate-700">${p.price.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function CategoriesTab() {
   const categories = useQuery(api.admin.listAdminCategories)
+  const counts = useQuery(api.admin.categoryProductCounts)
   const createCategory = useMutation(api.admin.createCategory)
   const updateCategory = useMutation(api.admin.updateCategory)
   const deleteCategory = useMutation(api.admin.deleteCategory)
@@ -967,6 +1013,7 @@ function CategoriesTab() {
   const [deleteTarget, setDeleteTarget] = useState<Doc<'categories'> | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [productModalCategory, setProductModalCategory] = useState<string | null>(null)
 
   const handleAdd = async () => {
     if (!newName.trim()) return
@@ -1032,6 +1079,7 @@ function CategoriesTab() {
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <th className="px-4 py-3">Category Name</th>
+                <th className="px-4 py-3 text-center">Products</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -1044,6 +1092,7 @@ function CategoriesTab() {
                       placeholder="e.g. Pain Relief"
                       className="w-full rounded-lg border border-teal-300 px-3 py-1.5 text-sm outline-none ring-teal-200 focus:ring-2" />
                   </td>
+                  <td className="px-4 py-3 text-center" />
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-1">
                       <button type="button" onClick={() => void handleAdd()} disabled={saving || !newName.trim()}
@@ -1059,7 +1108,7 @@ function CategoriesTab() {
                 </tr>
               )}
               {(categories ?? []).length === 0 && !adding && (
-                <tr><td colSpan={2} className="py-16 text-center text-slate-400">No categories yet. Add your first one!</td></tr>
+                <tr><td colSpan={3} className="py-16 text-center text-slate-400">No categories yet. Add your first one!</td></tr>
               )}
               {(categories ?? []).map((cat) => (
                 <tr key={cat._id} className="group hover:bg-slate-50">
@@ -1070,6 +1119,19 @@ function CategoriesTab() {
                         className="w-full rounded-lg border border-sky-300 px-3 py-1.5 text-sm outline-none ring-sky-200 focus:ring-2" />
                     ) : (
                       <span className="font-medium text-slate-800">{cat.name}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {counts !== undefined && counts !== null ? (
+                      <button
+                        type="button"
+                        onClick={() => setProductModalCategory(cat.name)}
+                        className="inline-flex items-center rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700 hover:bg-teal-100"
+                      >
+                        {counts[cat.name] ?? 0}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-300">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -1129,6 +1191,10 @@ function CategoriesTab() {
             </div>
           </div>
         </div>
+      )}
+
+      {productModalCategory && (
+        <CategoryProductsModal category={productModalCategory} onClose={() => setProductModalCategory(null)} />
       )}
     </>
   )
