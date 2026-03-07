@@ -12,6 +12,7 @@ import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as cart from "../cart.js";
 import type * as categories from "../categories.js";
+import type * as constants from "../constants.js";
 import type * as cryptoWebhook from "../cryptoWebhook.js";
 import type * as emails from "../emails.js";
 import type * as http from "../http.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   cart: typeof cart;
   categories: typeof categories;
+  constants: typeof constants;
   cryptoWebhook: typeof cryptoWebhook;
   emails: typeof emails;
   http: typeof http;

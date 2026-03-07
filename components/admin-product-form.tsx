@@ -107,6 +107,9 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const [showNewCategory, setShowNewCategory] = useState(false)
   const [newCategoryInput, setNewCategoryInput] = useState('')
   const [creatingCategory, setCreatingCategory] = useState(false)
+  const [showNewUnit, setShowNewUnit] = useState(false)
+  const [newUnitInput, setNewUnitInput] = useState('')
+  const [creatingUnit, setCreatingUnit] = useState(false)
 
   const nameRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -115,6 +118,8 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const getUploadedImageUrl = useMutation(api.admin.getUploadedImageUrl)
   const createCategory = useMutation(api.admin.createCategory)
   const dbCategories = useQuery(api.admin.listAdminCategories)
+  const createUnitType = useMutation(api.admin.createUnitType)
+  const dbUnitTypes = useQuery(api.admin.listUnitTypes)
 
   // Set default category once DB categories load (only for new products)
   useEffect(() => {
@@ -254,6 +259,20 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     }
   }
 
+  const handleCreateUnit = async () => {
+    const name = newUnitInput.trim()
+    if (!name) return
+    setCreatingUnit(true)
+    try {
+      await createUnitType({ name })
+      set('unit', name)
+      setNewUnitInput('')
+      setShowNewUnit(false)
+    } finally {
+      setCreatingUnit(false)
+    }
+  }
+
   const inputClass =
     'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none ring-sky-200 focus:border-sky-400 focus:ring-2 bg-white'
   const labelClass = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500'
@@ -348,13 +367,50 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             {/* Unit */}
             <div>
               <label className={labelClass}>Unit</label>
-              <select className={inputClass} value={form.unit} onChange={(e) => set('unit', e.target.value)}>
-                <option value="pill">Pill</option>
-                <option value="sachet">Sachet</option>
-                <option value="bottle">Bottle</option>
-                <option value="cap">Cap</option>
-                <option value="tablet">Tablet</option>
-              </select>
+              <div className="flex gap-2">
+                <select className={`${inputClass} flex-1`} value={form.unit} onChange={(e) => set('unit', e.target.value)}>
+                  {dbUnitTypes && dbUnitTypes.length > 0
+                    ? dbUnitTypes.map((u) => <option key={u._id} value={u.name}>{u.name}</option>)
+                    : ['Pill', 'Sachet', 'Bottle', 'Cap', 'Tablet'].map((u) => <option key={u} value={u.toLowerCase()}>{u}</option>)
+                  }
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowNewUnit((v) => !v)}
+                  title="Add new unit type"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  <Plus className="h-4 w-4" />New
+                </button>
+              </div>
+              {showNewUnit && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    className={`${inputClass} flex-1`}
+                    placeholder="New unit type (e.g. Vial)"
+                    value={newUnitInput}
+                    onChange={(e) => setNewUnitInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleCreateUnit() } }}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateUnit()}
+                    disabled={creatingUnit || !newUnitInput.trim()}
+                    className="inline-flex items-center gap-1 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+                  >
+                    {creatingUnit ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowNewUnit(false); setNewUnitInput('') }}
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Price */}

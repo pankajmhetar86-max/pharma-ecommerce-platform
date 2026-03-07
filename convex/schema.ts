@@ -130,4 +130,8 @@ export default defineSchema({
     sortOrder: v.number(),
     isActive: v.boolean(),
   }),
+
+  unitTypes: defineTable({
+    name: v.string(),
+  }),
 })

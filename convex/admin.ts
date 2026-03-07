@@ -2,6 +2,7 @@ import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 import type { Id } from './_generated/dataModel'
 import { authComponent } from './auth'
+import { DEFAULT_UNIT_TYPES } from './constants'
 
 // Checks that the current user's email matches the ADMIN_EMAIL env var set in Convex dashboard.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -167,6 +168,36 @@ export const createCategory = mutation({
     const admin = await getAdminUser(ctx)
     if (!admin) throw new Error('Not authorized')
     return ctx.db.insert('categories', { name: args.name.trim(), icon: 'pill' })
+  },
+})
+
+export const listUnitTypes = query({
+  args: {},
+  handler: async (ctx) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) return null
+    const units = await ctx.db.query('unitTypes').collect()
+    if (units.length === 0) return DEFAULT_UNIT_TYPES.map((name) => ({ _id: name, name }))
+    return units.sort((a, b) => a.name.localeCompare(b.name))
+  },
+})
+
+export const createUnitType = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    const name = args.name.trim()
+    const existing = await ctx.db.query('unitTypes').collect()
+    // Seed defaults if table is empty (first time a unit is created post-deploy)
+    if (existing.length === 0) {
+      for (const defaultName of DEFAULT_UNIT_TYPES) {
+        await ctx.db.insert('unitTypes', { name: defaultName })
+      }
+    } else if (existing.some((u) => u.name.toLowerCase() === name.toLowerCase())) {
+      return
+    }
+    return ctx.db.insert('unitTypes', { name })
   },
 })
 
