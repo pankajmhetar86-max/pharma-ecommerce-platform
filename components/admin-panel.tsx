@@ -966,6 +966,7 @@ function CategoriesTab() {
   const [editName, setEditName] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Doc<'categories'> | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const handleAdd = async () => {
     if (!newName.trim()) return
@@ -998,9 +999,12 @@ function CategoriesTab() {
   const handleDelete = async () => {
     if (!deleteTarget) return
     setDeleting(true)
+    setDeleteError('')
     try {
       await deleteCategory({ id: deleteTarget._id })
       setDeleteTarget(null)
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete category.')
     } finally {
       setDeleting(false)
     }
@@ -1107,12 +1111,14 @@ function CategoriesTab() {
               <Trash2 className="h-6 w-6 text-red-600" />
             </div>
             <h3 className="mb-1 text-lg font-bold text-slate-900">Delete Category?</h3>
-            <p className="mb-6 text-sm text-slate-500">
+            <p className="mb-4 text-sm text-slate-500">
               <span className="font-semibold text-slate-700">{deleteTarget.name}</span> will be removed from the sidebar.
-              Existing medicines in this category are not affected.
             </p>
+            {deleteError && (
+              <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{deleteError}</p>
+            )}
             <div className="flex gap-3">
-              <button type="button" onClick={() => setDeleteTarget(null)}
+              <button type="button" onClick={() => { setDeleteTarget(null); setDeleteError('') }}
                 className="flex-1 rounded-full border border-slate-300 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 Cancel
               </button>

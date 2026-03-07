@@ -215,6 +215,14 @@ export const deleteCategory = mutation({
   handler: async (ctx, args) => {
     const admin = await getAdminUser(ctx)
     if (!admin) throw new Error('Not authorized')
+    const category = await ctx.db.get(args.id)
+    if (!category) throw new Error('Category not found')
+    const products = await ctx.db
+      .query('products')
+      .withIndex('by_category_and_name', (q) => q.eq('category', category.name))
+      .collect()
+    if (products.length > 0)
+      throw new Error(`Cannot delete: ${products.length} product${products.length === 1 ? '' : 's'} use this category`)
     await ctx.db.delete(args.id)
   },
 })
