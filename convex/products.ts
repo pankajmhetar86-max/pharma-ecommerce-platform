@@ -42,6 +42,14 @@ export const list = query({
   },
 })
 
+export const listRecommended = query({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db.query('products').order('desc').collect()
+    return products.filter((p) => p.isVisible !== false && p.isRecommended === true)
+  },
+})
+
 export const getById = query({
   args: {
     productId: v.id('products'),

@@ -143,6 +143,7 @@ function ProductsTab() {
   const deleteProduct = useMutation(api.admin.deleteProduct)
   const toggleStock = useMutation(api.admin.toggleStock)
   const toggleVisibility = useMutation(api.admin.toggleVisibility)
+  const toggleRecommended = useMutation(api.admin.toggleRecommended)
 
   const handleSearchChange = (value: string) => {
     setSearch(value)
@@ -253,6 +254,7 @@ function ProductsTab() {
                   <th className="px-4 py-3">Price</th>
                   <th className="px-4 py-3 text-center">Visible</th>
                   <th className="px-4 py-3 text-center">In Stock</th>
+                  <th className="px-4 py-3 text-center">Recommended</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -265,6 +267,7 @@ function ProductsTab() {
                     onDelete={() => setDeleteTarget(p)}
                     onToggleStock={() => void toggleStock({ id: p._id, inStock: !p.inStock })}
                     onToggleVisibility={() => void toggleVisibility({ id: p._id, isVisible: p.isVisible === false })}
+                    onToggleRecommended={() => void toggleRecommended({ id: p._id, isRecommended: !p.isRecommended })}
                   />
                 ))}
               </tbody>
@@ -314,9 +317,10 @@ type RowProps = {
   onDelete: () => void
   onToggleStock: () => void
   onToggleVisibility: () => void
+  onToggleRecommended: () => void
 }
 
-function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibility }: RowProps) {
+function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibility, onToggleRecommended }: RowProps) {
   const visible = product.isVisible !== false
   const discountedPrice = product.price * (1 - product.discount / 100)
 
@@ -362,6 +366,14 @@ function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibili
           className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${product.inStock ? 'bg-teal-500' : 'bg-slate-200'}`}
           role="switch" aria-checked={product.inStock}>
           <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${product.inStock ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </td>
+      <td className="px-4 py-3 text-center">
+        <button type="button" onClick={onToggleRecommended}
+          title={product.isRecommended ? 'Remove from home page' : 'Show on home page'}
+          className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${product.isRecommended ? 'bg-amber-400' : 'bg-slate-200'}`}
+          role="switch" aria-checked={!!product.isRecommended}>
+          <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${product.isRecommended ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>
       </td>
       <td className="px-4 py-3 text-right">

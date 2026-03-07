@@ -136,6 +136,15 @@ export const toggleVisibility = mutation({
   },
 })
 
+export const toggleRecommended = mutation({
+  args: { id: v.id('products'), isRecommended: v.boolean() },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    await ctx.db.patch(args.id, { isRecommended: args.isRecommended })
+  },
+})
+
 // Ensures a category with the given name exists in the DB.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function ensureCategoryExists(ctx: any, name: string) {

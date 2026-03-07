@@ -81,6 +81,7 @@ export default defineSchema({
     inStock: v.boolean(),
     isBestseller: v.optional(v.boolean()),
     isVisible: v.optional(v.boolean()),
+    isRecommended: v.optional(v.boolean()),
     searchText: v.string(),
     seoTitle: v.optional(v.string()),
     seoDescription: v.optional(v.string()),
