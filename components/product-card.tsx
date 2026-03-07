@@ -34,7 +34,7 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
             -{product.discount}%
           </span>
         )}
-        <Link href={`/products/${product._id}`} className="block">
+        <Link href={`/${product.slug ?? product._id}`} className="block">
           <img src={product.image} alt={product.imageAlt ?? product.name} className="mx-auto h-24 w-24 object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://placehold.co/200x200/f1f5f9/94a3b8?text=No+Image' }} />
           <h3 className="mt-4 text-center text-xl font-bold text-slate-900">{product.name}</h3>
           <p className="mt-1 text-center text-sm text-slate-500">{product.genericName}</p>
@@ -49,7 +49,7 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
             {product.pricingMatrix.map((entry) => (
               <Link
                 key={entry.dosage}
-                href={`/products/${product._id}?dosage=${encodeURIComponent(entry.dosage)}`}
+                href={`/${product.slug ?? product._id}?dosage=${encodeURIComponent(entry.dosage)}`}
                 className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
               >
                 {entry.dosage}
@@ -59,7 +59,7 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
         )}
       </div>
       <Link
-        href={`/products/${product._id}`}
+        href={`/${product.slug ?? product._id}`}
         className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 py-3 text-base font-semibold text-white transition hover:from-emerald-600 hover:to-teal-600"
       >
         View Item

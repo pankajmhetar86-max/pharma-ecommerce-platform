@@ -1,6 +1,6 @@
 import { query } from './_generated/server'
 import { v } from 'convex/values'
-import type { Doc } from './_generated/dataModel'
+import type { Doc, Id } from './_generated/dataModel'
 
 export const list = query({
   args: {
@@ -56,6 +56,22 @@ export const getById = query({
   },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.productId)
+  },
+})
+
+export const getBySlugOrId = query({
+  args: { identifier: v.string() },
+  handler: async (ctx, args) => {
+    const bySlug = await ctx.db
+      .query('products')
+      .withIndex('by_slug', (q) => q.eq('slug', args.identifier))
+      .first()
+    if (bySlug) return bySlug
+    try {
+      return await ctx.db.get(args.identifier as Id<'products'>)
+    } catch {
+      return null
+    }
   },
 })
 

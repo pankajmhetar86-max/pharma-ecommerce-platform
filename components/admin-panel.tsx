@@ -180,6 +180,7 @@ function ProductsTab() {
       dosageOptions: pricingMatrix.map((d) => d.dosage),
       pricingMatrix: pricingMatrix.length > 0 ? pricingMatrix : undefined,
       fullDescription: data.fullDescription || undefined,
+      slug: data.slug.trim() || undefined,
     }
   }
 

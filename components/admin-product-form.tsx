@@ -31,6 +31,7 @@ export type ProductFormData = {
   imageAlt: string
   discount: number
   inStock: boolean
+  slug: string
   seoTitle: string
   seoDescription: string
   seoKeywords: string
@@ -55,9 +56,14 @@ const EMPTY_FORM: ProductFormData = {
   imageAlt: '',
   discount: 0,
   inStock: true,
+  slug: '',
   seoTitle: '',
   seoDescription: '',
   seoKeywords: '',
+}
+
+function slugify(name: string): string {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 function matrixFromDoc(doc: Doc<'products'>): DosagePricing[] {
@@ -89,6 +95,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
           imageAlt: initial.imageAlt ?? '',
           discount: initial.discount,
           inStock: initial.inStock,
+          slug: initial.slug ?? '',
           seoTitle: initial.seoTitle ?? '',
           seoDescription: initial.seoDescription ?? '',
           seoKeywords: initial.seoKeywords ?? '',
@@ -110,6 +117,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const [showNewUnit, setShowNewUnit] = useState(false)
   const [newUnitInput, setNewUnitInput] = useState('')
   const [creatingUnit, setCreatingUnit] = useState(false)
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!(initial?.slug))
 
   const nameRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -296,7 +304,10 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             <div>
               <label className={labelClass}>Brand Name *</label>
               <input ref={nameRef} type="text" className={inputClass} placeholder="e.g. Glucophage"
-                value={form.name} onChange={(e) => set('name', e.target.value)} />
+                value={form.name} onChange={(e) => {
+                  set('name', e.target.value)
+                  if (!slugManuallyEdited) set('slug', slugify(e.target.value))
+                }} />
             </div>
 
             {/* Generic name */}
@@ -674,10 +685,28 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             {/* SEO section */}
             <div className="sm:col-span-2">
               <div className="mb-3 border-t border-slate-100 pt-4">
-                <h3 className="text-sm font-bold text-slate-800">SEO Metadata</h3>
-                <p className="mt-0.5 text-xs text-slate-500">Configure search engine metadata for this product page.</p>
+                <h3 className="text-sm font-bold text-slate-800">URL &amp; SEO</h3>
+                <p className="mt-0.5 text-xs text-slate-500">Configure the product URL endpoint and search engine metadata.</p>
               </div>
               <div className="space-y-3">
+                <div>
+                  <label className={labelClass}>URL Endpoint (Slug)</label>
+                  <div className="flex items-center gap-0 overflow-hidden rounded-lg border border-slate-200 focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-200">
+                    <span className="select-none whitespace-nowrap bg-slate-50 px-3 py-2 text-sm text-slate-400">/</span>
+                    <input
+                      type="text"
+                      className="flex-1 bg-white px-2 py-2 text-sm text-slate-800 outline-none"
+                      placeholder="auto-generated-from-name"
+                      value={form.slug}
+                      onChange={(e) => {
+                        const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                        set('slug', val)
+                        setSlugManuallyEdited(val !== '')
+                      }}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">Auto-generated from the brand name. Customize to set a friendly URL.</p>
+                </div>
                 <div>
                   <label className={labelClass}>SEO Title</label>
                   <input type="text" className={inputClass}

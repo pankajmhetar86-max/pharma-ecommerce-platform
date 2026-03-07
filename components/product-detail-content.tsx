@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { ChevronLeft, ShoppingCart, ChevronDown, ChevronUp, Check } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import type { Id } from '@/convex/_generated/dataModel'
 import { api } from '@/convex/_generated/api'
 import { authClient } from '@/lib/auth-client'
 import { formatPrice } from '@/lib/utils'
@@ -112,8 +111,8 @@ export function ProductDetailContent({ productId }: { productId: string }) {
   const { data: session } = authClient.useSession()
   const addItem = useMutation(api.cart.addItem)
 
-  const product = useQuery(api.products.getById, productId ? { productId: productId as Id<'products'> } : 'skip')
-  const relatedProducts = useQuery(api.products.related, productId ? { productId: productId as Id<'products'>, limit: 4 } : 'skip')
+  const product = useQuery(api.products.getBySlugOrId, productId ? { identifier: productId } : 'skip')
+  const relatedProducts = useQuery(api.products.related, product?._id ? { productId: product._id, limit: 4 } : 'skip')
 
   const [selectedDosage, setSelectedDosage] = useState<string | null>(null)
   const [addingKey, setAddingKey] = useState<string | null>(null)
@@ -154,7 +153,7 @@ export function ProductDetailContent({ productId }: { productId: string }) {
   const handleAddToCart = async (dosage?: string, pillCount?: number, unitPrice?: number) => {
     if (!product) return
     if (!session?.user) {
-      router.push(`/auth/login?next=/products/${product._id}`)
+      router.push(`/auth/login?next=/${product.slug ?? product._id}`)
       return
     }
     const key = dosage ? `${dosage}-${pillCount ?? ''}` : 'simple'

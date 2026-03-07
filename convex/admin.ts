@@ -41,6 +41,25 @@ export const listAllProducts = query({
   },
 })
 
+function slugify(name: string): string {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveSlug(ctx: any, input: string, excludeId?: string): Promise<string> {
+  const base = slugify(input)
+  let candidate = base
+  let i = 2
+  while (true) {
+    const existing = await ctx.db
+      .query('products')
+      .withIndex('by_slug', (q: any) => q.eq('slug', candidate))
+      .first()
+    if (!existing || existing._id === excludeId) return candidate
+    candidate = `${base}-${i++}`
+  }
+}
+
 const pricingMatrixArg = v.optional(v.array(v.object({
   dosage: v.string(),
   packages: v.array(v.object({
@@ -66,6 +85,7 @@ export const createProduct = mutation({
     imageAlt: v.optional(v.string()),
     discount: v.number(),
     inStock: v.boolean(),
+    slug: v.optional(v.string()),
     seoTitle: v.optional(v.string()),
     seoDescription: v.optional(v.string()),
     seoKeywords: v.optional(v.string()),
@@ -74,8 +94,9 @@ export const createProduct = mutation({
     const admin = await getAdminUser(ctx)
     if (!admin) throw new Error('Not authorized')
     await ensureCategoryExists(ctx, args.category)
+    const slug = await resolveSlug(ctx, args.slug || args.name)
     const searchText = `${args.name} ${args.genericName} ${args.category} ${args.description}`.toLowerCase()
-    return ctx.db.insert('products', { ...args, searchText })
+    return ctx.db.insert('products', { ...args, slug, searchText })
   },
 })
 
@@ -95,6 +116,7 @@ export const updateProduct = mutation({
     imageAlt: v.optional(v.string()),
     discount: v.number(),
     inStock: v.boolean(),
+    slug: v.optional(v.string()),
     seoTitle: v.optional(v.string()),
     seoDescription: v.optional(v.string()),
     seoKeywords: v.optional(v.string()),
@@ -104,8 +126,9 @@ export const updateProduct = mutation({
     if (!admin) throw new Error('Not authorized')
     await ensureCategoryExists(ctx, args.category)
     const { id, ...fields } = args
+    const slug = await resolveSlug(ctx, fields.slug || fields.name, id)
     const searchText = `${fields.name} ${fields.genericName} ${fields.category} ${fields.description}`.toLowerCase()
-    await ctx.db.patch(id, { ...fields, searchText })
+    await ctx.db.patch(id, { ...fields, slug, searchText })
   },
 })
 

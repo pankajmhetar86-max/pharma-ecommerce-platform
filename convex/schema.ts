@@ -82,12 +82,14 @@ export default defineSchema({
     isBestseller: v.optional(v.boolean()),
     isVisible: v.optional(v.boolean()),
     isRecommended: v.optional(v.boolean()),
+    slug: v.optional(v.string()),
     searchText: v.string(),
     seoTitle: v.optional(v.string()),
     seoDescription: v.optional(v.string()),
     seoKeywords: v.optional(v.string()),
   })
     .index('by_category_and_name', ['category', 'name'])
+    .index('by_slug', ['slug'])
     .searchIndex('search_products', {
       searchField: 'searchText',
       filterFields: ['category', 'inStock'],
