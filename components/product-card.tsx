@@ -1,13 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { ShoppingCart } from 'lucide-react'
-import { useMutation } from 'convex/react'
-import { useRouter } from 'next/navigation'
 import type { Doc } from '@/convex/_generated/dataModel'
-import { api } from '@/convex/_generated/api'
-import { authClient } from '@/lib/auth-client'
 import { formatPrice } from '@/lib/utils'
 
 function getFromPrice(product: Doc<'products'>): { price: number; perUnit: string } {
@@ -30,25 +24,7 @@ function getFromPrice(product: Doc<'products'>): { price: number; perUnit: strin
 }
 
 export function ProductCard({ product }: { product: Doc<'products'> }) {
-  const router = useRouter()
-  const addItem = useMutation(api.cart.addItem)
-  const { data: session } = authClient.useSession()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
   const fromPrice = getFromPrice(product)
-
-  const handleBuyNow = async () => {
-    if (!session?.user) {
-      router.push(`/auth/login?next=/products/${product._id}`)
-      return
-    }
-    try {
-      setIsSubmitting(true)
-      await addItem({ productId: product._id, quantity: 1, unitPrice: fromPrice.price })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   return (
     <article className="pharma-card overflow-hidden">
@@ -66,31 +42,13 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
             {formatPrice(fromPrice.price)} per {fromPrice.perUnit}
           </p>
         </Link>
-
-        {/* Dosage chips */}
-        {product.dosageOptions.length > 0 && (
-          <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-            {product.dosageOptions.map((dosage) => (
-              <Link
-                key={dosage}
-                href={`/products/${product._id}?dosage=${encodeURIComponent(dosage)}`}
-                className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-              >
-                {dosage}
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
-      <button
-        type="button"
-        onClick={() => void handleBuyNow()}
-        disabled={isSubmitting || !product.inStock}
-        className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 py-3 text-base font-semibold text-white transition hover:from-emerald-600 hover:to-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
+      <Link
+        href={`/products/${product._id}`}
+        className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 py-3 text-base font-semibold text-white transition hover:from-emerald-600 hover:to-teal-600"
       >
-        <ShoppingCart className="h-4 w-4" />
-        {isSubmitting ? 'Adding...' : product.inStock ? 'Buy Now' : 'Out of Stock'}
-      </button>
+        View Item
+      </Link>
     </article>
   )
 }

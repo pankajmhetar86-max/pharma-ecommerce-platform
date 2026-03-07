@@ -1,6 +1,6 @@
 'use client'
 
-import { KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { X, Plus, Upload, Link as LinkIcon, Loader2, ImageOff, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
@@ -26,7 +26,6 @@ export type ProductFormData = {
   fullDescription: string
   price: number
   unit: string
-  dosageOptions: string[]
   pricingMatrix: DosagePricing[]
   image: string
   imageAlt: string
@@ -51,7 +50,6 @@ const EMPTY_FORM: ProductFormData = {
   fullDescription: '',
   price: 0,
   unit: 'pill',
-  dosageOptions: [],
   pricingMatrix: [],
   image: '',
   imageAlt: '',
@@ -86,7 +84,6 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
           fullDescription: initial.fullDescription ?? '',
           price: initial.price,
           unit: initial.unit,
-          dosageOptions: initial.dosageOptions,
           pricingMatrix: matrixFromDoc(initial),
           image: initial.image,
           imageAlt: initial.imageAlt ?? '',
@@ -98,7 +95,6 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
         }
       : EMPTY_FORM,
   )
-  const [dosageInput, setDosageInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [imageMode, setImageMode] = useState<'upload' | 'url'>(initial?.image ? 'url' : 'upload')
@@ -134,23 +130,6 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
 
   const set = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
-
-  const addDosage = () => {
-    const d = dosageInput.trim()
-    if (d && !form.dosageOptions.includes(d)) {
-      set('dosageOptions', [...form.dosageOptions, d])
-    }
-    setDosageInput('')
-  }
-
-  const removeDosage = (d: string) => set('dosageOptions', form.dosageOptions.filter((x) => x !== d))
-
-  const handleDosageKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      addDosage()
-    }
-  }
 
   // Pricing matrix helpers
   const addDosagePricing = (dosage: string) => {
@@ -252,7 +231,6 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     if (!form.genericName.trim()) return setError('Generic name is required.')
     if (!form.category) return setError('Category is required.')
     if (form.price <= 0) return setError('Price must be greater than 0.')
-    if (form.dosageOptions.length === 0) return setError('Add at least one dosage option.')
     setSaving(true)
     try {
       await onSubmit(form)
@@ -417,32 +395,6 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                 value={form.fullDescription} onChange={(e) => set('fullDescription', e.target.value)} />
             </div>
 
-            {/* Dosage options */}
-            <div className="sm:col-span-2">
-              <label className={labelClass}>Dosage Options *</label>
-              <p className="mb-1.5 text-xs text-slate-400">Type a dosage and press Enter or comma to add it. These appear as chips on the product card.</p>
-              <div className="flex gap-2">
-                <input type="text" className={`${inputClass} flex-1`} placeholder="e.g. 500mg, 850mg, 1000mg"
-                  value={dosageInput} onChange={(e) => setDosageInput(e.target.value)} onKeyDown={handleDosageKey} />
-                <button type="button" onClick={addDosage}
-                  className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700">
-                  <Plus className="h-4 w-4" />Add
-                </button>
-              </div>
-              {form.dosageOptions.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {form.dosageOptions.map((d) => (
-                    <span key={d} className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-800">
-                      {d}
-                      <button type="button" onClick={() => removeDosage(d)} className="text-sky-500 hover:text-sky-800" aria-label={`Remove ${d}`}>
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Pricing Matrix */}
             <div className="sm:col-span-2">
               <button
@@ -466,28 +418,6 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                   <p className="text-xs text-slate-500">
                     Add per-dosage, per-package pricing shown on the product detail page. Each dosage gets its own list of packages (10 pills, 30 pills, etc.) with original and discounted prices.
                   </p>
-
-                  {/* Sync from dosage options */}
-                  {form.dosageOptions.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 rounded-lg bg-sky-50 px-3 py-2">
-                      <span className="text-xs text-sky-700">Dosage options: {form.dosageOptions.join(', ')}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const existing = new Set(form.pricingMatrix.map((m) => m.dosage))
-                          const newEntries = form.dosageOptions
-                            .filter((d) => !existing.has(d))
-                            .map((d) => ({ dosage: d, packages: [] }))
-                          if (newEntries.length > 0) {
-                            set('pricingMatrix', [...form.pricingMatrix, ...newEntries])
-                          }
-                        }}
-                        className="ml-auto inline-flex items-center gap-1 rounded-full bg-sky-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-sky-700"
-                      >
-                        <Plus className="h-3 w-3" />Sync dosages
-                      </button>
-                    </div>
-                  )}
 
                   {/* Add new dosage to matrix */}
                   <div className="flex gap-2">
