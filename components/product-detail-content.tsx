@@ -28,8 +28,18 @@ type PackageRowProps = {
 }
 
 function PackageRow({
-  dosage, pillCount, originalPrice, price, benefits,
-  unit, image, imageAlt, inStock, onAddToCart, adding, justAdded,
+  dosage,
+  pillCount,
+  originalPrice,
+  price,
+  benefits,
+  unit,
+  image,
+  imageAlt,
+  inStock,
+  onAddToCart,
+  adding,
+  justAdded,
 }: PackageRowProps) {
   const perUnit = price / pillCount
   const savings = originalPrice - price
@@ -38,19 +48,23 @@ function PackageRow({
     <div className="grid grid-cols-[120px_1fr_auto] items-start gap-4 border-b border-slate-100 py-5 last:border-0 md:grid-cols-[160px_1fr_1fr_auto]">
       <div>
         <p className="text-base font-bold text-slate-900">{dosage}</p>
-        <p className="text-sm text-slate-500">{pillCount} {unit}s</p>
+        <p className="text-sm text-slate-500">
+          {pillCount} {unit}s
+        </p>
         <img src={image} alt={imageAlt ?? dosage} className="mt-2 h-12 w-12 object-contain" />
       </div>
       <div>
-        {originalPrice > price && (
-          <p className="text-sm text-slate-400 line-through">{formatPrice(originalPrice)}</p>
-        )}
+        {originalPrice > price && <p className="text-sm text-slate-400 line-through">{formatPrice(originalPrice)}</p>}
         <p className="text-xl font-bold text-slate-900">{formatPrice(price)}</p>
-        <p className="text-sm text-slate-500">{formatPrice(perUnit)} per {unit}</p>
+        <p className="text-sm text-slate-500">
+          {formatPrice(perUnit)} per {unit}
+        </p>
       </div>
       <div className="hidden space-y-1 md:block">
         {benefits.map((b) => (
-          <p key={b} className="text-sm text-slate-600">+ {b}</p>
+          <p key={b} className="text-sm text-slate-600">
+            + {b}
+          </p>
         ))}
       </div>
       <div className="flex flex-col items-end gap-1">
@@ -61,14 +75,20 @@ function PackageRow({
           className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:border-teal-400 hover:bg-teal-50 hover:text-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {justAdded ? (
-            <><Check className="h-4 w-4 text-teal-600" />Added</>
-          ) : adding ? 'Adding...' : (
-            <><ShoppingCart className="h-4 w-4" />Add to cart</>
+            <>
+              <Check className="h-4 w-4 text-teal-600" />
+              Added
+            </>
+          ) : adding ? (
+            'Adding...'
+          ) : (
+            <>
+              <ShoppingCart className="h-4 w-4" />
+              Add to cart
+            </>
           )}
         </button>
-        {savings > 0 && (
-          <p className="text-xs font-semibold text-red-500">save: {formatPrice(savings)}</p>
-        )}
+        {savings > 0 && <p className="text-xs font-semibold text-red-500">save: {formatPrice(savings)}</p>}
       </div>
     </div>
   )
@@ -94,7 +114,9 @@ function ProductDescriptionAccordion({ content }: { content: string }) {
             line.trim() === '' ? (
               <br key={i} />
             ) : (
-              <p key={i} className="mb-2 text-sm leading-6 text-slate-700">{line}</p>
+              <p key={i} className="mb-2 text-sm leading-6 text-slate-700">
+                {line}
+              </p>
             ),
           )}
         </div>
@@ -129,25 +151,7 @@ export function ProductDetailContent({ productId }: { productId: string }) {
     } else if (dosages.length > 0 && !selectedDosage) {
       setSelectedDosage(dosages[0])
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product])
-
-  useEffect(() => {
-    if (!product) return
-    const title = product.seoTitle || `${product.name} (${product.genericName})`
-    document.title = title
-    const setMeta = (name: string, content: string) => {
-      let el = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)
-      if (!el) {
-        el = document.createElement('meta')
-        el.setAttribute('name', name)
-        document.head.appendChild(el)
-      }
-      el.setAttribute('content', content)
-    }
-    if (product.seoDescription) setMeta('description', product.seoDescription)
-    if (product.seoKeywords) setMeta('keywords', product.seoKeywords)
-    return () => { document.title = 'PharmaCare' }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product])
 
   const handleAddToCart = async (dosage?: string, pillCount?: number, unitPrice?: number) => {
@@ -181,7 +185,10 @@ export function ProductDetailContent({ productId }: { productId: string }) {
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="text-slate-600">Product not found.</p>
-          <Link href="/products" className="mt-3 inline-flex rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700">
+          <Link
+            href="/products"
+            className="mt-3 inline-flex rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+          >
             Back to products
           </Link>
         </div>
@@ -193,7 +200,10 @@ export function ProductDetailContent({ productId }: { productId: string }) {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 lg:px-6">
-      <Link href="/products" className="inline-flex items-center gap-1 text-sm font-medium text-sky-700 hover:underline">
+      <Link
+        href="/products"
+        className="inline-flex items-center gap-1 text-sm font-medium text-sky-700 hover:underline"
+      >
         <ChevronLeft className="h-4 w-4" />
         Back to products
       </Link>
@@ -202,7 +212,14 @@ export function ProductDetailContent({ productId }: { productId: string }) {
       <section className="pharma-card p-5 md:p-6">
         <div className="flex flex-wrap items-start gap-6">
           <div className="rounded-3xl bg-slate-50 p-6">
-            <img src={product.image} alt={product.imageAlt ?? product.name} className="h-40 w-40 object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://placehold.co/200x200/f1f5f9/94a3b8?text=No+Image' }} />
+            <img
+              src={product.image}
+              alt={product.imageAlt ?? product.name}
+              className="h-40 w-40 object-contain"
+              onError={(e) => {
+                ;(e.currentTarget as HTMLImageElement).src = 'https://placehold.co/200x200/f1f5f9/94a3b8?text=No+Image'
+              }}
+            />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -216,8 +233,7 @@ export function ProductDetailContent({ productId }: { productId: string }) {
               </span>
             </div>
             <h1 className="mt-3 text-2xl font-bold text-slate-900 md:text-3xl">
-              {product.name}{' '}
-              <span className="text-lg font-normal text-slate-500">( {product.genericName} )</span>
+              {product.name} <span className="text-lg font-normal text-slate-500">( {product.genericName} )</span>
             </h1>
             {product.description && (
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{product.description}</p>
@@ -231,7 +247,9 @@ export function ProductDetailContent({ productId }: { productId: string }) {
                 </p>
                 <button
                   type="button"
-                  onClick={() => void handleAddToCart(undefined, undefined, product.price * (1 - product.discount / 100))}
+                  onClick={() =>
+                    void handleAddToCart(undefined, undefined, product.price * (1 - product.discount / 100))
+                  }
                   disabled={addingKey !== null || !product.inStock}
                   className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-3 text-sm font-semibold text-white hover:from-emerald-600 hover:to-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -296,13 +314,17 @@ export function ProductDetailContent({ productId }: { productId: string }) {
                     {formatPrice(product.price * (1 - product.discount / 100))}
                     <span className="ml-1 text-base font-medium text-slate-500">per {product.unit}</span>
                   </p>
-                  {selectedDosage && (
-                    <p className="mt-1 text-sm text-slate-500">Selected: {selectedDosage}</p>
-                  )}
+                  {selectedDosage && <p className="mt-1 text-sm text-slate-500">Selected: {selectedDosage}</p>}
                 </div>
                 <button
                   type="button"
-                  onClick={() => void handleAddToCart(selectedDosage ?? undefined, undefined, product.price * (1 - product.discount / 100))}
+                  onClick={() =>
+                    void handleAddToCart(
+                      selectedDosage ?? undefined,
+                      undefined,
+                      product.price * (1 - product.discount / 100),
+                    )
+                  }
                   disabled={addingKey !== null || !product.inStock}
                   className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-3 text-sm font-semibold text-white hover:from-emerald-600 hover:to-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -316,9 +338,7 @@ export function ProductDetailContent({ productId }: { productId: string }) {
       )}
 
       {/* Full product description accordion */}
-      {product.fullDescription && (
-        <ProductDescriptionAccordion content={product.fullDescription} />
-      )}
+      {product.fullDescription && <ProductDescriptionAccordion content={product.fullDescription} />}
 
       {/* Related products */}
       <section className="space-y-3">
