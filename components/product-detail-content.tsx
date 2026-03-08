@@ -8,7 +8,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
 import { authClient } from '@/lib/auth-client'
 import { formatPrice } from '@/lib/utils'
-import { ProductGrid } from './product-grid'
 
 // ── Package row ────────────────────────────────────────────────────────────────
 
@@ -142,7 +141,6 @@ export function ProductDetailContent({ productId }: { productId: string }) {
   const addItem = useMutation(api.cart.addItem)
 
   const product = useQuery(api.products.getBySlugOrId, productId ? { identifier: productId } : 'skip')
-  const relatedProducts = useQuery(api.products.related, product?._id ? { productId: product._id, limit: 4 } : 'skip')
 
   const [selectedDosage, setSelectedDosage] = useState<string | null>(null)
   const [addingKey, setAddingKey] = useState<string | null>(null)
@@ -348,12 +346,6 @@ export function ProductDetailContent({ productId }: { productId: string }) {
 
       {/* Full product description accordion */}
       {product.fullDescription && <ProductDescriptionAccordion content={product.fullDescription} />}
-
-      {/* Related products */}
-      <section className="space-y-3">
-        <h2 className="text-2xl font-bold text-slate-900">Related products</h2>
-        <ProductGrid products={relatedProducts} />
-      </section>
     </div>
   )
 }
