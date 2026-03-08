@@ -18,6 +18,7 @@ type PackageRowProps = {
   originalPrice: number
   price: number
   benefits: string[]
+  expiryDate?: string
   unit: string
   image: string
   imageAlt?: string
@@ -33,6 +34,7 @@ function PackageRow({
   originalPrice,
   price,
   benefits,
+  expiryDate,
   unit,
   image,
   imageAlt,
@@ -43,6 +45,11 @@ function PackageRow({
 }: PackageRowProps) {
   const perUnit = price / pillCount
   const savings = originalPrice - price
+  const expiry = expiryDate ? new Date(`${expiryDate}T00:00:00`) : null
+  const formattedExpiryDate =
+    expiry && !Number.isNaN(expiry.valueOf())
+      ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(expiry)
+      : expiryDate || null
 
   return (
     <div className="grid grid-cols-[120px_1fr_auto] items-start gap-4 border-b border-slate-100 py-5 last:border-0 md:grid-cols-[160px_1fr_1fr_auto]">
@@ -51,6 +58,7 @@ function PackageRow({
         <p className="text-sm text-slate-500">
           {pillCount} {unit}s
         </p>
+        {formattedExpiryDate ? <p className="text-xs text-slate-400">Expires: {formattedExpiryDate}</p> : null}
         <img src={image} alt={imageAlt ?? dosage} className="mt-2 h-12 w-12 object-contain" />
       </div>
       <div>
@@ -296,6 +304,7 @@ export function ProductDetailContent({ productId }: { productId: string }) {
                     originalPrice={pkg.originalPrice}
                     price={pkg.price}
                     benefits={pkg.benefits ?? []}
+                    expiryDate={pkg.expiryDate}
                     unit={product.unit}
                     image={product.image}
                     imageAlt={product.imageAlt}

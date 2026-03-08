@@ -42,7 +42,11 @@ export const listAllProducts = query({
 })
 
 function slugify(name: string): string {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,15 +64,22 @@ async function resolveSlug(ctx: any, input: string, excludeId?: string): Promise
   }
 }
 
-const pricingMatrixArg = v.optional(v.array(v.object({
-  dosage: v.string(),
-  packages: v.array(v.object({
-    pillCount: v.number(),
-    originalPrice: v.number(),
-    price: v.number(),
-    benefits: v.optional(v.array(v.string())),
-  })),
-})))
+const pricingMatrixArg = v.optional(
+  v.array(
+    v.object({
+      dosage: v.string(),
+      packages: v.array(
+        v.object({
+          pillCount: v.number(),
+          originalPrice: v.number(),
+          price: v.number(),
+          benefits: v.optional(v.array(v.string())),
+          expiryDate: v.optional(v.string()),
+        }),
+      ),
+    }),
+  ),
+)
 
 export const createProduct = mutation({
   args: {

@@ -51,6 +51,7 @@ const packageValidator = v.object({
   originalPrice: v.number(),
   price: v.number(),
   benefits: v.optional(v.array(v.string())),
+  expiryDate: v.optional(v.string()),
 })
 
 const dosagePricingValidator = v.object({

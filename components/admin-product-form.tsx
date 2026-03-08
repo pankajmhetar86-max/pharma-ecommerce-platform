@@ -11,6 +11,7 @@ type PackageOption = {
   originalPrice: string
   price: string
   benefits: string
+  expiryDate: string
 }
 
 type DosagePricing = {
@@ -63,7 +64,11 @@ const EMPTY_FORM: ProductFormData = {
 }
 
 function slugify(name: string): string {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 function matrixFromDoc(doc: Doc<'products'>): DosagePricing[] {
@@ -75,6 +80,7 @@ function matrixFromDoc(doc: Doc<'products'>): DosagePricing[] {
       originalPrice: String(p.originalPrice),
       price: String(p.price),
       benefits: (p.benefits ?? []).join(', '),
+      expiryDate: p.expiryDate ?? '',
     })),
   }))
 }
@@ -117,7 +123,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const [showNewUnit, setShowNewUnit] = useState(false)
   const [newUnitInput, setNewUnitInput] = useState('')
   const [creatingUnit, setCreatingUnit] = useState(false)
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!(initial?.slug))
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!initial?.slug)
 
   const nameRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -134,7 +140,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     if (!initial && dbCategories && dbCategories.length > 0 && !form.category) {
       set('category', dbCategories[0].name)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbCategories])
 
   useEffect(() => {
@@ -153,13 +159,19 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   }
 
   const removeDosagePricing = (dosage: string) => {
-    set('pricingMatrix', form.pricingMatrix.filter((m) => m.dosage !== dosage))
+    set(
+      'pricingMatrix',
+      form.pricingMatrix.filter((m) => m.dosage !== dosage),
+    )
   }
 
   const addPackageToDosage = (dosageIdx: number) => {
     const updated = form.pricingMatrix.map((d, i) =>
       i === dosageIdx
-        ? { ...d, packages: [...d.packages, { pillCount: '', originalPrice: '', price: '', benefits: '' }] }
+        ? {
+            ...d,
+            packages: [...d.packages, { pillCount: '', originalPrice: '', price: '', benefits: '', expiryDate: '' }],
+          }
         : d,
     )
     set('pricingMatrix', updated)
@@ -172,12 +184,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     set('pricingMatrix', updated)
   }
 
-  const updatePackage = (
-    dosageIdx: number,
-    pkgIdx: number,
-    field: keyof PackageOption,
-    value: string,
-  ) => {
+  const updatePackage = (dosageIdx: number, pkgIdx: number, field: keyof PackageOption, value: string) => {
     const updated = form.pricingMatrix.map((d, i) =>
       i === dosageIdx
         ? {
@@ -291,8 +298,11 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <h2 className="text-lg font-bold text-slate-900">{initial ? 'Edit Medicine' : 'Add New Medicine'}</h2>
-          <button type="button" onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -303,21 +313,32 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             {/* Brand name */}
             <div>
               <label className={labelClass}>Brand Name *</label>
-              <input ref={nameRef} type="text" className={inputClass} placeholder="e.g. Glucophage"
-                value={form.name} onChange={(e) => {
+              <input
+                ref={nameRef}
+                type="text"
+                className={inputClass}
+                placeholder="e.g. Glucophage"
+                value={form.name}
+                onChange={(e) => {
                   set('name', e.target.value)
                   if (!slugManuallyEdited) set('slug', slugify(`${e.target.value} ${form.genericName}`))
-                }} />
+                }}
+              />
             </div>
 
             {/* Generic name */}
             <div>
               <label className={labelClass}>Generic Name *</label>
-              <input type="text" className={inputClass} placeholder="e.g. Metformin"
-                value={form.genericName} onChange={(e) => {
+              <input
+                type="text"
+                className={inputClass}
+                placeholder="e.g. Metformin"
+                value={form.genericName}
+                onChange={(e) => {
                   set('genericName', e.target.value)
                   if (!slugManuallyEdited) set('slug', slugify(`${form.name} ${e.target.value}`))
-                }} />
+                }}
+              />
             </div>
 
             {/* Category */}
@@ -332,7 +353,9 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                 >
                   {!form.category && <option value="">Select a category...</option>}
                   {(dbCategories ?? []).map((c) => (
-                    <option key={c._id} value={c.name}>{c.name}</option>
+                    <option key={c._id} value={c.name}>
+                      {c.name}
+                    </option>
                   ))}
                   {/* Show current value if it's not in the DB (legacy data) */}
                   {form.category && dbCategories && !dbCategories.some((c) => c.name === form.category) && (
@@ -345,7 +368,8 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                   title="Add new category"
                   className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
                 >
-                  <Plus className="h-4 w-4" />New
+                  <Plus className="h-4 w-4" />
+                  New
                 </button>
               </div>
               {showNewCategory && (
@@ -356,7 +380,12 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                     placeholder="New category name"
                     value={newCategoryInput}
                     onChange={(e) => setNewCategoryInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleCreateCategory() } }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        void handleCreateCategory()
+                      }
+                    }}
                     autoFocus
                   />
                   <button
@@ -369,7 +398,10 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setShowNewCategory(false); setNewCategoryInput('') }}
+                    onClick={() => {
+                      setShowNewCategory(false)
+                      setNewCategoryInput('')
+                    }}
                     className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
                   >
                     Cancel
@@ -382,11 +414,22 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             <div>
               <label className={labelClass}>Unit</label>
               <div className="flex gap-2">
-                <select className={`${inputClass} flex-1`} value={form.unit} onChange={(e) => set('unit', e.target.value)}>
+                <select
+                  className={`${inputClass} flex-1`}
+                  value={form.unit}
+                  onChange={(e) => set('unit', e.target.value)}
+                >
                   {dbUnitTypes && dbUnitTypes.length > 0
-                    ? dbUnitTypes.map((u) => <option key={u._id} value={u.name}>{u.name}</option>)
-                    : ['Pill', 'Sachet', 'Bottle', 'Cap', 'Tablet'].map((u) => <option key={u} value={u.toLowerCase()}>{u}</option>)
-                  }
+                    ? dbUnitTypes.map((u) => (
+                        <option key={u._id} value={u.name}>
+                          {u.name}
+                        </option>
+                      ))
+                    : ['Pill', 'Sachet', 'Bottle', 'Cap', 'Tablet'].map((u) => (
+                        <option key={u} value={u.toLowerCase()}>
+                          {u}
+                        </option>
+                      ))}
                 </select>
                 <button
                   type="button"
@@ -394,7 +437,8 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                   title="Add new unit type"
                   className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
                 >
-                  <Plus className="h-4 w-4" />New
+                  <Plus className="h-4 w-4" />
+                  New
                 </button>
               </div>
               {showNewUnit && (
@@ -405,7 +449,12 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                     placeholder="New unit type (e.g. Vial)"
                     value={newUnitInput}
                     onChange={(e) => setNewUnitInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleCreateUnit() } }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        void handleCreateUnit()
+                      }
+                    }}
                     autoFocus
                   />
                   <button
@@ -418,7 +467,10 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setShowNewUnit(false); setNewUnitInput('') }}
+                    onClick={() => {
+                      setShowNewUnit(false)
+                      setNewUnitInput('')
+                    }}
                     className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
                   >
                     Cancel
@@ -432,8 +484,15 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
               <label className={labelClass}>Base Price (USD) *</label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-2 text-sm text-slate-400">$</span>
-                <input type="number" min={0} step={0.01} className={`${inputClass} pl-7`} placeholder="0.00"
-                  value={form.price || ''} onChange={(e) => set('price', parseFloat(e.target.value) || 0)} />
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className={`${inputClass} pl-7`}
+                  placeholder="0.00"
+                  value={form.price || ''}
+                  onChange={(e) => set('price', parseFloat(e.target.value) || 0)}
+                />
               </div>
             </div>
 
@@ -441,8 +500,15 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             <div>
               <label className={labelClass}>Discount (%)</label>
               <div className="relative">
-                <input type="number" min={0} max={100} className={`${inputClass} pr-7`} placeholder="0"
-                  value={form.discount || ''} onChange={(e) => set('discount', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))} />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  className={`${inputClass} pr-7`}
+                  placeholder="0"
+                  value={form.discount || ''}
+                  onChange={(e) => set('discount', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                />
                 <span className="pointer-events-none absolute right-3 top-2 text-sm text-slate-400">%</span>
               </div>
             </div>
@@ -451,18 +517,28 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             <div className="sm:col-span-2">
               <label className={labelClass}>Brief Description</label>
               <p className="mb-1.5 text-xs text-slate-400">Shown on the product detail page header (2–3 sentences).</p>
-              <textarea className={`${inputClass} resize-none`} rows={3}
+              <textarea
+                className={`${inputClass} resize-none`}
+                rows={3}
                 placeholder="Brief description of the medicine and its uses..."
-                value={form.description} onChange={(e) => set('description', e.target.value)} />
+                value={form.description}
+                onChange={(e) => set('description', e.target.value)}
+              />
             </div>
 
             {/* Full Product Description */}
             <div className="sm:col-span-2">
               <label className={labelClass}>Full Product Description</label>
-              <p className="mb-1.5 text-xs text-slate-400">Shown in the collapsible tab at the bottom of the product page. Supports plain text with line breaks.</p>
-              <textarea className={`${inputClass} resize-y`} rows={8}
+              <p className="mb-1.5 text-xs text-slate-400">
+                Shown in the collapsible tab at the bottom of the product page. Supports plain text with line breaks.
+              </p>
+              <textarea
+                className={`${inputClass} resize-y`}
+                rows={8}
                 placeholder="Common use&#10;The main component of Viagra is Sildenafil Citrate...&#10;&#10;Dosage and direction&#10;Usually the recommended dose is 50 mg..."
-                value={form.fullDescription} onChange={(e) => set('fullDescription', e.target.value)} />
+                value={form.fullDescription}
+                onChange={(e) => set('fullDescription', e.target.value)}
+              />
             </div>
 
             {/* Pricing Matrix */}
@@ -486,7 +562,8 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
               {matrixOpen && (
                 <div className="mt-3 space-y-4 rounded-xl border border-slate-200 p-4">
                   <p className="text-xs text-slate-500">
-                    Add per-dosage, per-package pricing shown on the product detail page. Each dosage gets its own list of packages (10 pills, 30 pills, etc.) with original and discounted prices.
+                    Add per-dosage, per-package pricing shown on the product detail page. Each dosage gets its own list
+                    of packages (10 pills, 30 pills, etc.) with original and discounted prices.
                   </p>
 
                   {/* Add new dosage to matrix */}
@@ -498,12 +575,19 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                       value={newDosageForMatrix}
                       onChange={(e) => setNewDosageForMatrix(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') { e.preventDefault(); addDosagePricing(newDosageForMatrix) }
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          addDosagePricing(newDosageForMatrix)
+                        }
                       }}
                     />
-                    <button type="button" onClick={() => addDosagePricing(newDosageForMatrix)}
-                      className="inline-flex items-center gap-1 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700">
-                      <Plus className="h-4 w-4" />Add Dosage
+                    <button
+                      type="button"
+                      onClick={() => addDosagePricing(newDosageForMatrix)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Dosage
                     </button>
                   </div>
 
@@ -512,51 +596,94 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
                         <span className="text-sm font-bold text-slate-800">{dosageEntry.dosage}</span>
                         <div className="flex items-center gap-2">
-                          <button type="button" onClick={() => addPackageToDosage(dosageIdx)}
-                            className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100">
-                            <Plus className="h-3 w-3" />Add Package
+                          <button
+                            type="button"
+                            onClick={() => addPackageToDosage(dosageIdx)}
+                            className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Add Package
                           </button>
-                          <button type="button" onClick={() => removeDosagePricing(dosageEntry.dosage)}
-                            className="text-slate-400 hover:text-red-500">
+                          <button
+                            type="button"
+                            onClick={() => removeDosagePricing(dosageEntry.dosage)}
+                            className="text-slate-400 hover:text-red-500"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </div>
 
                       {dosageEntry.packages.length === 0 ? (
-                        <p className="px-4 py-3 text-xs text-slate-400">No packages yet. Click "Add Package" to add one.</p>
+                        <p className="px-4 py-3 text-xs text-slate-400">
+                          No packages yet. Click "Add Package" to add one.
+                        </p>
                       ) : (
                         <div className="divide-y divide-slate-100">
                           {dosageEntry.packages.map((pkg, pkgIdx) => (
                             <div key={pkgIdx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-4 py-3">
                               <div>
                                 <label className="mb-1 block text-xs text-slate-400">Qty ({form.unit}s)</label>
-                                <input type="number" min={1} className={inputClass} placeholder="e.g. 30"
+                                <input
+                                  type="number"
+                                  min={1}
+                                  className={inputClass}
+                                  placeholder="e.g. 30"
                                   value={pkg.pillCount}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'pillCount', e.target.value)} />
+                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'pillCount', e.target.value)}
+                                />
                               </div>
                               <div>
                                 <label className="mb-1 block text-xs text-slate-400">Original $</label>
-                                <input type="number" min={0} step={0.01} className={inputClass} placeholder="34.57"
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={0.01}
+                                  className={inputClass}
+                                  placeholder="34.57"
                                   value={pkg.originalPrice}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'originalPrice', e.target.value)} />
+                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'originalPrice', e.target.value)}
+                                />
                               </div>
                               <div>
                                 <label className="mb-1 block text-xs text-slate-400">Sale $</label>
-                                <input type="number" min={0} step={0.01} className={inputClass} placeholder="18.99"
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={0.01}
+                                  className={inputClass}
+                                  placeholder="18.99"
                                   value={pkg.price}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'price', e.target.value)} />
+                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'price', e.target.value)}
+                                />
                               </div>
-                              <button type="button" onClick={() => removePackage(dosageIdx, pkgIdx)}
-                                className="mt-5 text-slate-400 hover:text-red-500">
+                              <button
+                                type="button"
+                                onClick={() => removePackage(dosageIdx, pkgIdx)}
+                                className="mt-5 text-slate-400 hover:text-red-500"
+                              >
                                 <X className="h-4 w-4" />
                               </button>
-                              <div className="col-span-3">
-                                <label className="mb-1 block text-xs text-slate-400">Benefits (comma-separated, e.g. "4 free ED pills, Package delivery insurance")</label>
-                                <input type="text" className={inputClass}
+                              <div>
+                                <label className="mb-1 block text-xs text-slate-400">Expiration Date</label>
+                                <input
+                                  type="date"
+                                  className={inputClass}
+                                  value={pkg.expiryDate}
+                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'expiryDate', e.target.value)}
+                                />
+                              </div>
+                              <div className="col-span-2">
+                                <label className="mb-1 block text-xs text-slate-400">
+                                  Benefits (comma-separated, e.g. "4 free ED pills, Package delivery insurance")
+                                </label>
+                                <input
+                                  type="text"
+                                  className={inputClass}
                                   placeholder="4 free ED pills, Package delivery insurance, Next orders 10% discount"
                                   value={pkg.benefits}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'benefits', e.target.value)} />
+                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'benefits', e.target.value)}
+                                />
                               </div>
                             </div>
                           ))}
@@ -573,39 +700,67 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
               <label className={labelClass}>Product Image</label>
 
               <div className="mb-3 flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
-                <button type="button" onClick={() => setImageMode('upload')}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-md py-1.5 text-sm font-semibold transition-colors ${imageMode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                  <Upload className="h-4 w-4" />Upload from device
+                <button
+                  type="button"
+                  onClick={() => setImageMode('upload')}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md py-1.5 text-sm font-semibold transition-colors ${imageMode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload from device
                 </button>
-                <button type="button" onClick={() => setImageMode('url')}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-md py-1.5 text-sm font-semibold transition-colors ${imageMode === 'url' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                  <LinkIcon className="h-4 w-4" />Use image URL
+                <button
+                  type="button"
+                  onClick={() => setImageMode('url')}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md py-1.5 text-sm font-semibold transition-colors ${imageMode === 'url' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  Use image URL
                 </button>
               </div>
 
               {imageMode === 'upload' && (
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setDragOver(true)
+                  }}
                   onDragLeave={() => setDragOver(false)}
                   onDrop={handleDrop}
-                  className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${dragOver ? 'border-sky-400 bg-sky-50' : 'border-slate-200 bg-slate-50 hover:border-sky-300 hover:bg-sky-50/50'}`}>
+                  className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${dragOver ? 'border-sky-400 bg-sky-50' : 'border-slate-200 bg-slate-50 hover:border-sky-300 hover:bg-sky-50/50'}`}
+                >
                   {uploading ? (
-                    <><Loader2 className="h-8 w-8 animate-spin text-sky-500" /><p className="text-sm font-medium text-slate-600">Uploading image...</p></>
+                    <>
+                      <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
+                      <p className="text-sm font-medium text-slate-600">Uploading image...</p>
+                    </>
                   ) : (
-                    <><Upload className="h-8 w-8 text-slate-400" />
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700">Click to select or drag &amp; drop</p>
-                      <p className="text-xs text-slate-400">JPG, PNG, WebP, GIF up to any size</p>
-                    </div></>
+                    <>
+                      <Upload className="h-8 w-8 text-slate-400" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">Click to select or drag &amp; drop</p>
+                        <p className="text-xs text-slate-400">JPG, PNG, WebP, GIF up to any size</p>
+                      </div>
+                    </>
                   )}
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
                 </div>
               )}
 
               {imageMode === 'url' && (
-                <input type="url" className={inputClass} placeholder="https://example.com/image.jpg"
-                  value={form.image} onChange={(e) => handleUrlChange(e.target.value)} />
+                <input
+                  type="url"
+                  className={inputClass}
+                  placeholder="https://example.com/image.jpg"
+                  value={form.image}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                />
               )}
 
               {uploadError && <p className="mt-1.5 text-xs font-medium text-red-600">{uploadError}</p>}
@@ -613,8 +768,13 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
               {/* Alt text */}
               <div className="mt-3">
                 <label className={labelClass}>Image Alt Text</label>
-                <input type="text" className={inputClass} placeholder="e.g. Glucophage 500mg pill bottle"
-                  value={form.imageAlt} onChange={(e) => set('imageAlt', e.target.value)} />
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="e.g. Glucophage 500mg pill bottle"
+                  value={form.imageAlt}
+                  onChange={(e) => set('imageAlt', e.target.value)}
+                />
               </div>
 
               {/* Live card preview */}
@@ -637,12 +797,16 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                               <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
                             </div>
                           )}
-                          <img src={previewSrc} alt={form.imageAlt || 'Preview'} className="h-24 w-24 object-contain"
+                          <img
+                            src={previewSrc}
+                            alt={form.imageAlt || 'Preview'}
+                            className="h-24 w-24 object-contain"
                             onError={(e) => {
                               const el = e.currentTarget as HTMLImageElement
                               el.style.display = 'none'
                               el.nextElementSibling?.classList.remove('hidden')
-                            }} />
+                            }}
+                          />
                           <div className="hidden flex-col items-center gap-1 text-slate-300">
                             <ImageOff className="h-8 w-8" />
                             <span className="text-xs">Bad URL</span>
@@ -661,9 +825,13 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                     {!uploading && previewSrc && imageMode === 'upload' && (
                       <div className="flex flex-col gap-2 pt-2">
                         <p className="text-xs text-slate-500">Happy with it? Or pick a different one.</p>
-                        <button type="button" onClick={() => fileInputRef.current?.click()}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                          <Upload className="h-3 w-3" />Change image
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                        >
+                          <Upload className="h-3 w-3" />
+                          Change image
                         </button>
                       </div>
                     )}
@@ -674,10 +842,16 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
 
             {/* In Stock toggle */}
             <div className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 sm:col-span-2">
-              <button type="button" onClick={() => set('inStock', !form.inStock)}
+              <button
+                type="button"
+                onClick={() => set('inStock', !form.inStock)}
                 className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${form.inStock ? 'bg-teal-500' : 'bg-slate-200'}`}
-                role="switch" aria-checked={form.inStock}>
-                <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${form.inStock ? 'translate-x-5' : 'translate-x-0'}`} />
+                role="switch"
+                aria-checked={form.inStock}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${form.inStock ? 'translate-x-5' : 'translate-x-0'}`}
+                />
               </button>
               <div>
                 <p className="text-sm font-semibold text-slate-800">In Stock</p>
@@ -689,13 +863,17 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             <div className="sm:col-span-2">
               <div className="mb-3 border-t border-slate-100 pt-4">
                 <h3 className="text-sm font-bold text-slate-800">URL &amp; SEO</h3>
-                <p className="mt-0.5 text-xs text-slate-500">Configure the product URL endpoint and search engine metadata.</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Configure the product URL endpoint and search engine metadata.
+                </p>
               </div>
               <div className="space-y-3">
                 <div>
                   <label className={labelClass}>URL Endpoint (Slug)</label>
                   <div className="flex items-center gap-0 overflow-hidden rounded-lg border border-slate-200 focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-200">
-                    <span className="select-none whitespace-nowrap bg-slate-50 px-3 py-2 text-sm text-slate-400">/</span>
+                    <span className="select-none whitespace-nowrap bg-slate-50 px-3 py-2 text-sm text-slate-400">
+                      /
+                    </span>
                     <input
                       type="text"
                       className="flex-1 bg-white px-2 py-2 text-sm text-slate-800 outline-none"
@@ -708,46 +886,69 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                       }}
                     />
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">Auto-generated from the brand name. Customize to set a friendly URL.</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Auto-generated from the brand name. Customize to set a friendly URL.
+                  </p>
                 </div>
                 <div>
                   <label className={labelClass}>SEO Title</label>
-                  <input type="text" className={inputClass}
+                  <input
+                    type="text"
+                    className={inputClass}
                     placeholder="e.g. Generic Viagra (Sildenafil Citrate) - YourPharmacy.com"
-                    value={form.seoTitle} onChange={(e) => set('seoTitle', e.target.value)} />
-                  <p className="mt-1 text-xs text-slate-400">Used in the browser tab and search results. Recommended: 50–60 characters.</p>
+                    value={form.seoTitle}
+                    onChange={(e) => set('seoTitle', e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Used in the browser tab and search results. Recommended: 50–60 characters.
+                  </p>
                 </div>
                 <div>
                   <label className={labelClass}>SEO Description</label>
-                  <textarea className={`${inputClass} resize-none`} rows={3}
+                  <textarea
+                    className={`${inputClass} resize-none`}
+                    rows={3}
                     placeholder="e.g. Viagra is used to treat erectile dysfunction. Sildenafil relaxes muscles and blood vessels..."
-                    value={form.seoDescription} onChange={(e) => set('seoDescription', e.target.value)} />
-                  <p className="mt-1 text-xs text-slate-400">Shown in search engine results. Recommended: 150–160 characters.</p>
+                    value={form.seoDescription}
+                    onChange={(e) => set('seoDescription', e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Shown in search engine results. Recommended: 150–160 characters.
+                  </p>
                 </div>
                 <div>
                   <label className={labelClass}>SEO Keywords</label>
-                  <input type="text" className={inputClass}
+                  <input
+                    type="text"
+                    className={inputClass}
                     placeholder="e.g. sildenafil, viagra, erectile dysfunction, 50mg, 100mg"
-                    value={form.seoKeywords} onChange={(e) => set('seoKeywords', e.target.value)} />
+                    value={form.seoKeywords}
+                    onChange={(e) => set('seoKeywords', e.target.value)}
+                  />
                   <p className="mt-1 text-xs text-slate-400">Comma-separated keywords for the meta keywords tag.</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {error && (
-            <p className="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">{error}</p>
-          )}
+          {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">{error}</p>}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
-          <button type="button" onClick={onClose}
-            className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+          >
             Cancel
           </button>
-          <button type="button" onClick={handleSubmit} disabled={saving || uploading}
-            className="rounded-full bg-teal-600 px-6 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={saving || uploading}
+            className="rounded-full bg-teal-600 px-6 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+          >
             {saving ? 'Saving...' : initial ? 'Save Changes' : 'Add Medicine'}
           </button>
         </div>

@@ -72,7 +72,10 @@ export function AdminPanel() {
           <code className="rounded bg-slate-100 px-1 text-sm">ADMIN_EMAIL</code> environment variable in the Convex
           dashboard.
         </p>
-        <Link href="/" className="rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700">
+        <Link
+          href="/"
+          className="rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+        >
           Back to Shop
         </Link>
       </div>
@@ -147,7 +150,9 @@ function ProductsTab() {
   const toggleRecommended = useMutation(api.admin.toggleRecommended)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { void backfillSlugs() }, [])
+  useEffect(() => {
+    void backfillSlugs()
+  }, [])
 
   const handleSearchChange = (value: string) => {
     setSearch(value)
@@ -174,8 +179,12 @@ function ProductsTab() {
             originalPrice: parseFloat(p.originalPrice) || 0,
             price: parseFloat(p.price) || 0,
             benefits: p.benefits
-              ? p.benefits.split(',').map((b) => b.trim()).filter(Boolean)
+              ? p.benefits
+                  .split(',')
+                  .map((b) => b.trim())
+                  .filter(Boolean)
               : [],
+            expiryDate: p.expiryDate.trim() || undefined,
           })),
       }))
       .filter((d) => d.packages.length > 0)
@@ -300,12 +309,19 @@ function ProductsTab() {
               Tip: use the <strong>Visible</strong> toggle to hide a medicine without deleting it.
             </p>
             <div className="flex gap-3">
-              <button type="button" onClick={() => setDeleteTarget(null)}
-                className="flex-1 rounded-full border border-slate-300 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 rounded-full border border-slate-300 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
                 Cancel
               </button>
-              <button type="button" onClick={() => void handleDelete()} disabled={deleting}
-                className="flex-1 rounded-full bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60">
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                disabled={deleting}
+                className="flex-1 rounded-full bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+              >
                 {deleting ? 'Deleting...' : 'Yes, Delete'}
               </button>
             </div>
@@ -334,8 +350,11 @@ function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibili
       <td className="max-w-[220px] px-4 py-3">
         <div className="flex items-center gap-3">
           {product.image ? (
-            <img src={product.image} alt={product.imageAlt ?? product.name}
-              className="h-10 w-10 shrink-0 rounded-lg border border-slate-100 object-cover" />
+            <img
+              src={product.image}
+              alt={product.imageAlt ?? product.name}
+              className="h-10 w-10 shrink-0 rounded-lg border border-slate-100 object-cover"
+            />
           ) : (
             <div className="h-10 w-10 shrink-0 rounded-lg bg-slate-100" />
           )}
@@ -359,36 +378,59 @@ function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibili
         )}
       </td>
       <td className="px-4 py-3 text-center">
-        <button type="button" onClick={onToggleVisibility}
+        <button
+          type="button"
+          onClick={onToggleVisibility}
           title={visible ? 'Hide from shop' : 'Show on shop'}
-          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors ${visible ? 'text-teal-600 hover:bg-teal-50' : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500'}`}>
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors ${visible ? 'text-teal-600 hover:bg-teal-50' : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500'}`}
+        >
           {visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
       </td>
       <td className="px-4 py-3 text-center">
-        <button type="button" onClick={onToggleStock}
+        <button
+          type="button"
+          onClick={onToggleStock}
           title={product.inStock ? 'Mark as out of stock' : 'Mark as in stock'}
           className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${product.inStock ? 'bg-teal-500' : 'bg-slate-200'}`}
-          role="switch" aria-checked={product.inStock}>
-          <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${product.inStock ? 'translate-x-5' : 'translate-x-0'}`} />
+          role="switch"
+          aria-checked={product.inStock}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${product.inStock ? 'translate-x-5' : 'translate-x-0'}`}
+          />
         </button>
       </td>
       <td className="px-4 py-3 text-center">
-        <button type="button" onClick={onToggleRecommended}
+        <button
+          type="button"
+          onClick={onToggleRecommended}
           title={product.isRecommended ? 'Remove from home page' : 'Show on home page'}
           className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${product.isRecommended ? 'bg-amber-400' : 'bg-slate-200'}`}
-          role="switch" aria-checked={!!product.isRecommended}>
-          <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${product.isRecommended ? 'translate-x-5' : 'translate-x-0'}`} />
+          role="switch"
+          aria-checked={!!product.isRecommended}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${product.isRecommended ? 'translate-x-5' : 'translate-x-0'}`}
+          />
         </button>
       </td>
       <td className="px-4 py-3 text-right">
         <div className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button type="button" onClick={onEdit} title="Edit"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-700">
+          <button
+            type="button"
+            onClick={onEdit}
+            title="Edit"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-700"
+          >
             <Pencil className="h-4 w-4" />
           </button>
-          <button type="button" onClick={onDelete} title="Delete permanently"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-red-50 hover:text-red-600">
+          <button
+            type="button"
+            onClick={onDelete}
+            title="Delete permanently"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-red-50 hover:text-red-600"
+          >
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
@@ -411,7 +453,7 @@ function OrdersTab() {
       await updateStatus({ id, status })
       // keep modal in sync if it's open for this order
       if (viewingOrder?._id === id) {
-        setViewingOrder((prev) => prev ? { ...prev, status } : null)
+        setViewingOrder((prev) => (prev ? { ...prev, status } : null))
       }
     } finally {
       setUpdatingId(null)
@@ -462,7 +504,9 @@ function OrdersTab() {
                       <td className="px-4 py-3 text-xs text-slate-700">
                         {order.billingAddress ? (
                           <div>
-                            <p className="font-medium">{order.billingAddress.firstName} {order.billingAddress.lastName}</p>
+                            <p className="font-medium">
+                              {order.billingAddress.firstName} {order.billingAddress.lastName}
+                            </p>
                             <p className="text-slate-500">{order.billingAddress.email}</p>
                           </div>
                         ) : (
@@ -471,32 +515,42 @@ function OrdersTab() {
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-600">
                         {order.items.slice(0, 2).map((item) => (
-                          <div key={item.productId}>{item.name} ×{item.quantity}</div>
+                          <div key={item.productId}>
+                            {item.name} ×{item.quantity}
+                          </div>
                         ))}
-                        {order.items.length > 2 && (
-                          <div className="text-slate-400">+{order.items.length - 2} more</div>
-                        )}
+                        {order.items.length > 2 && <div className="text-slate-400">+{order.items.length - 2} more</div>}
                       </td>
                       <td className="px-4 py-3 font-semibold text-slate-900">{formatPrice(order.total)}</td>
                       <td className="px-4 py-3">
                         {order.paymentMethod === 'crypto' ? (
-                          <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700">Crypto</span>
+                          <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
+                            Crypto
+                          </span>
                         ) : (
-                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">Standard</span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                            Standard
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sd.color}`}>{sd.label}</span>
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sd.color}`}>
+                            {sd.label}
+                          </span>
                           <div className="relative">
                             <select
                               value={order.status}
-                              onChange={(e) => void handleStatusChange(order._id, e.target.value as Doc<'orders'>['status'])}
+                              onChange={(e) =>
+                                void handleStatusChange(order._id, e.target.value as Doc<'orders'>['status'])
+                              }
                               disabled={updatingId === order._id}
                               className="appearance-none rounded-lg border border-slate-200 bg-white py-1 pl-2 pr-6 text-xs text-slate-700 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
                             >
                               {ORDER_STATUSES.map((s) => (
-                                <option key={s.value} value={s.value}>{s.label}</option>
+                                <option key={s.value} value={s.value}>
+                                  {s.label}
+                                </option>
                               ))}
                             </select>
                             <ChevronDown className="pointer-events-none absolute right-1.5 top-1.5 h-3 w-3 text-slate-400" />
@@ -556,9 +610,13 @@ function OrderDetailModal({
     if ('sameAsBilling' in order.shippingAddress && order.shippingAddress.sameAsBilling) return null
     return order.shippingAddress as {
       sameAsBilling: false
-      firstName: string; lastName: string
-      streetAddress: string; city: string
-      country: string; state: string; zipCode: string
+      firstName: string
+      lastName: string
+      streetAddress: string
+      city: string
+      country: string
+      state: string
+      zipCode: string
     }
   })()
 
@@ -572,9 +630,7 @@ function OrderDetailModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">
-              Order #{order._id.slice(-8).toUpperCase()}
-            </h2>
+            <h2 className="text-lg font-bold text-slate-900">Order #{order._id.slice(-8).toUpperCase()}</h2>
             <p className="text-xs text-slate-500">{formatDate(order.createdAt)}</p>
           </div>
           <button
@@ -588,14 +644,17 @@ function OrderDetailModal({
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-
           {/* Status + payment */}
           <div className="flex flex-wrap items-center gap-3">
             <span className={`rounded-full px-3 py-1 text-sm font-semibold ${sd.color}`}>{sd.label}</span>
             {order.paymentMethod === 'crypto' ? (
-              <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-semibold text-violet-700">Crypto Payment</span>
+              <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-semibold text-violet-700">
+                Crypto Payment
+              </span>
             ) : (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">Standard Payment</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">
+                Standard Payment
+              </span>
             )}
             {order.nowPaymentsId && (
               <span className="text-xs text-slate-400">NOWPayments ID: {order.nowPaymentsId}</span>
@@ -636,7 +695,9 @@ function OrderDetailModal({
                 <div className="flex flex-wrap gap-x-8 gap-y-2">
                   <div>
                     <span className="text-xs text-slate-400">Name</span>
-                    <p className="font-medium text-slate-800">{billing.firstName} {billing.lastName}</p>
+                    <p className="font-medium text-slate-800">
+                      {billing.firstName} {billing.lastName}
+                    </p>
                   </div>
                   <div>
                     <span className="text-xs text-slate-400">New Customer</span>
@@ -677,9 +738,12 @@ function OrderDetailModal({
             </p>
             {shippingAddr ? (
               <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
-                <p className="font-medium text-slate-800">{shippingAddr.firstName} {shippingAddr.lastName}</p>
+                <p className="font-medium text-slate-800">
+                  {shippingAddr.firstName} {shippingAddr.lastName}
+                </p>
                 <p className="mt-1 text-slate-700">
-                  {shippingAddr.streetAddress}, {shippingAddr.city}, {shippingAddr.state} {shippingAddr.zipCode}, {shippingAddr.country}
+                  {shippingAddr.streetAddress}, {shippingAddr.city}, {shippingAddr.state} {shippingAddr.zipCode},{' '}
+                  {shippingAddr.country}
                 </p>
               </div>
             ) : billing ? (
@@ -716,25 +780,37 @@ function OrderDetailModal({
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
                           {item.image && (
-                            <img src={item.image} alt={item.name}
-                              className="h-8 w-8 shrink-0 rounded-md border border-slate-100 object-cover" />
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-8 w-8 shrink-0 rounded-md border border-slate-100 object-cover"
+                            />
                           )}
                           <div>
                             <p className="font-medium text-slate-800">{item.name}</p>
-                            <p className="text-xs text-slate-500">{item.genericName}{item.dosage ? ` · ${item.dosage}` : ''}</p>
+                            <p className="text-xs text-slate-500">
+                              {item.genericName}
+                              {item.dosage ? ` · ${item.dosage}` : ''}
+                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-right text-slate-600">{formatPrice(item.unitPrice)}</td>
                       <td className="px-4 py-2.5 text-right text-slate-600">{item.quantity}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-slate-900">{formatPrice(item.lineTotal)}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-slate-900">
+                        {formatPrice(item.lineTotal)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-slate-200 bg-slate-50">
-                    <td colSpan={3} className="px-4 py-3 text-right text-sm font-bold text-slate-700">Order Total</td>
-                    <td className="px-4 py-3 text-right text-base font-bold text-slate-900">{formatPrice(order.total)}</td>
+                    <td colSpan={3} className="px-4 py-3 text-right text-sm font-bold text-slate-700">
+                      Order Total
+                    </td>
+                    <td className="px-4 py-3 text-right text-base font-bold text-slate-900">
+                      {formatPrice(order.total)}
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -748,11 +824,23 @@ function OrderDetailModal({
               Order Metadata
             </p>
             <dl className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
-              <div><dt className="text-slate-400">Order ID</dt><dd className="font-mono text-slate-700">{order._id}</dd></div>
-              <div><dt className="text-slate-400">Placed at</dt><dd className="text-slate-700">{formatDate(order.createdAt)}</dd></div>
-              <div><dt className="text-slate-400">Payment method</dt><dd className="capitalize text-slate-700">{order.paymentMethod ?? '—'}</dd></div>
+              <div>
+                <dt className="text-slate-400">Order ID</dt>
+                <dd className="font-mono text-slate-700">{order._id}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Placed at</dt>
+                <dd className="text-slate-700">{formatDate(order.createdAt)}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Payment method</dt>
+                <dd className="capitalize text-slate-700">{order.paymentMethod ?? '—'}</dd>
+              </div>
               {order.nowPaymentsId && (
-                <div><dt className="text-slate-400">NOWPayments ID</dt><dd className="font-mono text-slate-700">{order.nowPaymentsId}</dd></div>
+                <div>
+                  <dt className="text-slate-400">NOWPayments ID</dt>
+                  <dd className="font-mono text-slate-700">{order.nowPaymentsId}</dd>
+                </div>
               )}
             </dl>
           </div>
@@ -842,42 +930,77 @@ function SliderTab() {
         <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="mb-3 text-sm font-semibold text-slate-800">Add New Slide</h3>
           <div className="mb-3 flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 w-fit">
-            <button type="button" onClick={() => setAddMode('upload')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${addMode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            <button
+              type="button"
+              onClick={() => setAddMode('upload')}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${addMode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
               <Upload className="h-4 w-4" />
               Upload
             </button>
-            <button type="button" onClick={() => setAddMode('url')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${addMode === 'url' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            <button
+              type="button"
+              onClick={() => setAddMode('url')}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${addMode === 'url' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
               <ImageIcon className="h-4 w-4" />
               URL
             </button>
           </div>
           <div className="space-y-3">
             {addMode === 'upload' ? (
-              <label className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${uploading ? 'border-sky-300 bg-sky-50' : 'border-slate-200 bg-slate-50 hover:border-sky-300 hover:bg-sky-50/50'}`}>
+              <label
+                className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${uploading ? 'border-sky-300 bg-sky-50' : 'border-slate-200 bg-slate-50 hover:border-sky-300 hover:bg-sky-50/50'}`}
+              >
                 {uploading ? (
-                  <><Loader2 className="h-7 w-7 animate-spin text-sky-500" /><p className="text-sm text-slate-600">Uploading...</p></>
+                  <>
+                    <Loader2 className="h-7 w-7 animate-spin text-sky-500" />
+                    <p className="text-sm text-slate-600">Uploading...</p>
+                  </>
                 ) : (
-                  <><Upload className="h-7 w-7 text-slate-400" /><p className="text-sm font-semibold text-slate-700">Click to select image</p><p className="text-xs text-slate-400">JPG, PNG, WebP</p></>
+                  <>
+                    <Upload className="h-7 w-7 text-slate-400" />
+                    <p className="text-sm font-semibold text-slate-700">Click to select image</p>
+                    <p className="text-xs text-slate-400">JPG, PNG, WebP</p>
+                  </>
                 )}
-                <input type="file" accept="image/*" className="hidden" disabled={uploading}
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFileUpload(f) }} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) void handleFileUpload(f)
+                  }}
+                />
               </label>
             ) : (
               <div className="flex gap-2">
-                <input type="url" placeholder="https://example.com/banner.jpg" value={urlInput}
+                <input
+                  type="url"
+                  placeholder="https://example.com/banner.jpg"
+                  value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200" />
-                <button type="button" onClick={() => void handleAddUrl()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700">
-                  <Plus className="h-4 w-4" />Add
+                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleAddUrl()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add
                 </button>
               </div>
             )}
-            <input type="text" placeholder="Alt text (for accessibility)" value={altInput}
+            <input
+              type="text"
+              placeholder="Alt text (for accessibility)"
+              value={altInput}
               onChange={(e) => setAltInput(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200" />
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+            />
           </div>
           {uploadError && <p className="mt-2 text-xs text-red-600">{uploadError}</p>}
         </div>
@@ -885,7 +1008,9 @@ function SliderTab() {
 
       <div className="space-y-3">
         {images === undefined ? (
-          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-teal-500" /></div>
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
+          </div>
         ) : images.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center text-slate-400">
             No slider images yet. Add your first one above.
@@ -896,8 +1021,12 @@ function SliderTab() {
               key={img._id}
               img={img}
               index={i + 1}
-              onToggleActive={() => void updateSliderImage({ id: img._id, isActive: !img.isActive, altText: img.altText })}
-              onUpdateAlt={(alt) => void updateSliderImage({ id: img._id, isActive: img.isActive, altText: alt || undefined })}
+              onToggleActive={() =>
+                void updateSliderImage({ id: img._id, isActive: !img.isActive, altText: img.altText })
+              }
+              onUpdateAlt={(alt) =>
+                void updateSliderImage({ id: img._id, isActive: img.isActive, altText: alt || undefined })
+              }
               onDelete={() => void deleteSliderImage({ id: img._id })}
             />
           ))
@@ -908,7 +1037,11 @@ function SliderTab() {
 }
 
 function SliderImageRow({
-  img, index, onToggleActive, onUpdateAlt, onDelete,
+  img,
+  index,
+  onToggleActive,
+  onUpdateAlt,
+  onDelete,
 }: {
   img: Doc<'sliderImages'>
   index: number
@@ -921,24 +1054,52 @@ function SliderImageRow({
 
   return (
     <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">{index}</span>
-      <img src={img.url} alt={img.altText ?? `Slide ${index}`}
-        className="h-14 w-24 shrink-0 rounded-lg object-cover border border-slate-100" />
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+        {index}
+      </span>
+      <img
+        src={img.url}
+        alt={img.altText ?? `Slide ${index}`}
+        className="h-14 w-24 shrink-0 rounded-lg object-cover border border-slate-100"
+      />
       <div className="flex-1 min-w-0">
         {editing ? (
           <div className="flex gap-2">
-            <input autoFocus type="text" value={editAlt} onChange={(e) => setEditAlt(e.target.value)}
+            <input
+              autoFocus
+              type="text"
+              value={editAlt}
+              onChange={(e) => setEditAlt(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') { onUpdateAlt(editAlt); setEditing(false) }
-                if (e.key === 'Escape') { setEditAlt(img.altText ?? ''); setEditing(false) }
+                if (e.key === 'Enter') {
+                  onUpdateAlt(editAlt)
+                  setEditing(false)
+                }
+                if (e.key === 'Escape') {
+                  setEditAlt(img.altText ?? '')
+                  setEditing(false)
+                }
               }}
-              className="flex-1 rounded-lg border border-sky-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-sky-200" />
-            <button type="button" onClick={() => { onUpdateAlt(editAlt); setEditing(false) }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white hover:bg-sky-700">
+              className="flex-1 rounded-lg border border-sky-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                onUpdateAlt(editAlt)
+                setEditing(false)
+              }}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white hover:bg-sky-700"
+            >
               <Check className="h-3.5 w-3.5" />
             </button>
-            <button type="button" onClick={() => { setEditAlt(img.altText ?? ''); setEditing(false) }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setEditAlt(img.altText ?? '')
+                setEditing(false)
+              }}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"
+            >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -947,21 +1108,34 @@ function SliderImageRow({
             <p className="truncate text-sm text-slate-700">
               {img.altText ? img.altText : <span className="italic text-slate-400">No alt text</span>}
             </p>
-            <button type="button" onClick={() => setEditing(true)}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            >
               <Pencil className="h-3 w-3" />
             </button>
           </div>
         )}
         <p className="mt-0.5 truncate text-xs text-slate-400">{img.url}</p>
       </div>
-      <button type="button" onClick={onToggleActive}
+      <button
+        type="button"
+        onClick={onToggleActive}
         className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${img.isActive ? 'bg-teal-500' : 'bg-slate-200'}`}
-        role="switch" aria-checked={img.isActive} title={img.isActive ? 'Deactivate' : 'Activate'}>
-        <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${img.isActive ? 'translate-x-5' : 'translate-x-0'}`} />
+        role="switch"
+        aria-checked={img.isActive}
+        title={img.isActive ? 'Deactivate' : 'Activate'}
+      >
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${img.isActive ? 'translate-x-5' : 'translate-x-0'}`}
+        />
       </button>
-      <button type="button" onClick={onDelete}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600">
+      <button
+        type="button"
+        onClick={onDelete}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600"
+      >
         <Trash2 className="h-4 w-4" />
       </button>
     </div>
@@ -979,14 +1153,19 @@ function CategoryProductsModal({ category, onClose }: { category: string; onClos
           <h3 className="font-bold text-slate-900">
             Products in <span className="text-teal-700">{category}</span>
           </h3>
-          <button type="button" onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">
           {products === undefined || products === null ? (
-            <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-teal-500" /></div>
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-5 w-5 animate-spin text-teal-500" />
+            </div>
           ) : products.length === 0 ? (
             <p className="py-16 text-center text-sm text-slate-400">No products in this category.</p>
           ) : (
@@ -1070,8 +1249,7 @@ function CategoriesTab() {
     } catch (err) {
       const raw = err instanceof Error ? err.message : ''
       // Convex wraps the thrown message — extract after "Uncaught Error:" if present
-      const extracted = raw.match(/Uncaught Error:\s*(.+?)(?:\n|$)/)?.[1]
-        ?? raw.match(/Cannot delete:[^\n]+/)?.[0]
+      const extracted = raw.match(/Uncaught Error:\s*(.+?)(?:\n|$)/)?.[1] ?? raw.match(/Cannot delete:[^\n]+/)?.[0]
       setDeleteError(extracted ?? 'Failed to delete category.')
     } finally {
       setDeleting(false)
@@ -1085,8 +1263,14 @@ function CategoriesTab() {
           <h2 className="text-lg font-bold text-slate-900">Categories</h2>
           <p className="text-sm text-slate-500">Manage the categories shown in the shop sidebar.</p>
         </div>
-        <button type="button" onClick={() => { setAdding(true); setNewName('') }}
-          className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 active:scale-95">
+        <button
+          type="button"
+          onClick={() => {
+            setAdding(true)
+            setNewName('')
+          }}
+          className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 active:scale-95"
+        >
           <Plus className="h-4 w-4" />
           Add Category
         </button>
@@ -1094,7 +1278,9 @@ function CategoriesTab() {
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {categories === undefined ? (
-          <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-teal-500" /></div>
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
+          </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
@@ -1108,20 +1294,37 @@ function CategoriesTab() {
               {adding && (
                 <tr className="bg-teal-50/50">
                   <td className="px-4 py-3">
-                    <input autoFocus type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') void handleAdd(); if (e.key === 'Escape') setAdding(false) }}
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') void handleAdd()
+                        if (e.key === 'Escape') setAdding(false)
+                      }}
                       placeholder="e.g. Pain Relief"
-                      className="w-full rounded-lg border border-teal-300 px-3 py-1.5 text-sm outline-none ring-teal-200 focus:ring-2" />
+                      className="w-full rounded-lg border border-teal-300 px-3 py-1.5 text-sm outline-none ring-teal-200 focus:ring-2"
+                    />
                   </td>
                   <td className="px-4 py-3 text-center" />
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-1">
-                      <button type="button" onClick={() => void handleAdd()} disabled={saving || !newName.trim()}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50" title="Save">
+                      <button
+                        type="button"
+                        onClick={() => void handleAdd()}
+                        disabled={saving || !newName.trim()}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50"
+                        title="Save"
+                      >
                         {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                       </button>
-                      <button type="button" onClick={() => setAdding(false)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100" title="Cancel">
+                      <button
+                        type="button"
+                        onClick={() => setAdding(false)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"
+                        title="Cancel"
+                      >
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -1129,15 +1332,27 @@ function CategoriesTab() {
                 </tr>
               )}
               {(categories ?? []).length === 0 && !adding && (
-                <tr><td colSpan={3} className="py-16 text-center text-slate-400">No categories yet. Add your first one!</td></tr>
+                <tr>
+                  <td colSpan={3} className="py-16 text-center text-slate-400">
+                    No categories yet. Add your first one!
+                  </td>
+                </tr>
               )}
               {(categories ?? []).map((cat) => (
                 <tr key={cat._id} className="group hover:bg-slate-50">
                   <td className="px-4 py-3">
                     {editingId === cat._id ? (
-                      <input autoFocus type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') void handleSaveEdit(); if (e.key === 'Escape') setEditingId(null) }}
-                        className="w-full rounded-lg border border-sky-300 px-3 py-1.5 text-sm outline-none ring-sky-200 focus:ring-2" />
+                      <input
+                        autoFocus
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void handleSaveEdit()
+                          if (e.key === 'Escape') setEditingId(null)
+                        }}
+                        className="w-full rounded-lg border border-sky-300 px-3 py-1.5 text-sm outline-none ring-sky-200 focus:ring-2"
+                      />
                     ) : (
                       <span className="font-medium text-slate-800">{cat.name}</span>
                     )}
@@ -1158,23 +1373,44 @@ function CategoriesTab() {
                   <td className="px-4 py-3 text-right">
                     {editingId === cat._id ? (
                       <div className="inline-flex items-center gap-1">
-                        <button type="button" onClick={() => void handleSaveEdit()} disabled={saving}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50" title="Save">
-                          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                        <button
+                          type="button"
+                          onClick={() => void handleSaveEdit()}
+                          disabled={saving}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50"
+                          title="Save"
+                        >
+                          {saving ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
                         </button>
-                        <button type="button" onClick={() => setEditingId(null)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100" title="Cancel">
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"
+                          title="Cancel"
+                        >
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ) : (
                       <div className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button type="button" onClick={() => startEdit(cat)} title="Edit"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-700">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(cat)}
+                          title="Edit"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-700"
+                        >
                           <Pencil className="h-4 w-4" />
                         </button>
-                        <button type="button" onClick={() => setDeleteTarget(cat)} title="Delete"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-red-50 hover:text-red-600">
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(cat)}
+                          title="Delete"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-red-50 hover:text-red-600"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -1195,18 +1431,27 @@ function CategoriesTab() {
             </div>
             <h3 className="mb-1 text-lg font-bold text-slate-900">Delete Category?</h3>
             <p className="mb-4 text-sm text-slate-500">
-              <span className="font-semibold text-slate-700">{deleteTarget.name}</span> will be removed from the sidebar.
+              <span className="font-semibold text-slate-700">{deleteTarget.name}</span> will be removed from the
+              sidebar.
             </p>
-            {deleteError && (
-              <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{deleteError}</p>
-            )}
+            {deleteError && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{deleteError}</p>}
             <div className="flex gap-3">
-              <button type="button" onClick={() => { setDeleteTarget(null); setDeleteError('') }}
-                className="flex-1 rounded-full border border-slate-300 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteTarget(null)
+                  setDeleteError('')
+                }}
+                className="flex-1 rounded-full border border-slate-300 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
                 Cancel
               </button>
-              <button type="button" onClick={() => void handleDelete()} disabled={deleting}
-                className="flex-1 rounded-full bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60">
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                disabled={deleting}
+                className="flex-1 rounded-full bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+              >
                 {deleting ? 'Deleting...' : 'Yes, Delete'}
               </button>
             </div>
