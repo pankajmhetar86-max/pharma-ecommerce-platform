@@ -12,6 +12,10 @@ function formatDate(timestamp: number) {
   }).format(timestamp)
 }
 
+function normalizeTrackingWebsite(url: string) {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending_payment: { label: 'Pending Payment', color: 'bg-yellow-100 text-yellow-800' },
   pending: { label: 'Pending', color: 'bg-slate-100 text-slate-700' },
@@ -146,6 +150,26 @@ export function OrdersPageContent() {
                     !order.shippingAddress.sameAsBilling
                       ? `${(order.shippingAddress as { firstName: string }).firstName} ${(order.shippingAddress as { lastName: string }).lastName}, ${(order.shippingAddress as { city: string }).city}, ${(order.shippingAddress as { country: string }).country}`
                       : `${order.billingAddress.firstName} ${order.billingAddress.lastName}, ${order.billingAddress.city}, ${order.billingAddress.country}`}
+                  </div>
+                )}
+
+                {(order.trackingWebsite || order.trackingNumber) && (
+                  <div className="mt-3 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-sm text-slate-700">
+                    <p className="font-semibold text-slate-900">Tracking Details</p>
+                    {order.trackingWebsite && (
+                      <p className="mt-1">
+                        Website:{' '}
+                        <a
+                          href={normalizeTrackingWebsite(order.trackingWebsite)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-sky-700 underline underline-offset-2"
+                        >
+                          {order.trackingWebsite}
+                        </a>
+                      </p>
+                    )}
+                    {order.trackingNumber && <p className="mt-1">Tracking Number: {order.trackingNumber}</p>}
                   </div>
                 )}
 

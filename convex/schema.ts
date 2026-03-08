@@ -119,6 +119,8 @@ export default defineSchema({
     createdAt: v.number(),
     paymentMethod: v.optional(v.union(v.literal('standard'), v.literal('crypto'))),
     nowPaymentsId: v.optional(v.string()),
+    trackingWebsite: v.optional(v.string()),
+    trackingNumber: v.optional(v.string()),
     billingAddress: v.optional(billingAddressValidator),
     shippingAddress: v.optional(
       v.union(

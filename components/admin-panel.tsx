@@ -50,6 +50,10 @@ function getStatusDisplay(status: string) {
   return ORDER_STATUSES.find((s) => s.value === status) ?? { label: status, color: 'bg-slate-100 text-slate-700' }
 }
 
+function normalizeTrackingWebsite(url: string) {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`
+}
+
 export function AdminPanel() {
   const isAdmin = useQuery(api.admin.isAdmin)
   const [tab, setTab] = useState<Tab>('products')
@@ -446,7 +450,9 @@ function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibili
 function OrdersTab() {
   const orders = useQuery(api.admin.listAllOrders)
   const updateStatus = useMutation(api.admin.updateOrderStatus)
+  const updateTracking = useMutation(api.admin.updateOrderTracking)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [savingTrackingId, setSavingTrackingId] = useState<string | null>(null)
   const [viewingOrder, setViewingOrder] = useState<Doc<'orders'> | null>(null)
 
   const handleStatusChange = async (id: Doc<'orders'>['_id'], status: Doc<'orders'>['status']) => {
@@ -459,6 +465,33 @@ function OrdersTab() {
       }
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  const handleTrackingSave = async (id: Doc<'orders'>['_id'], trackingWebsite: string, trackingNumber: string) => {
+    setSavingTrackingId(id)
+    const normalizedTrackingWebsite = trackingWebsite.trim()
+    const normalizedTrackingNumber = trackingNumber.trim()
+
+    try {
+      await updateTracking({
+        id,
+        trackingWebsite: normalizedTrackingWebsite || undefined,
+        trackingNumber: normalizedTrackingNumber || undefined,
+      })
+      if (viewingOrder?._id === id) {
+        setViewingOrder((prev) =>
+          prev
+            ? {
+                ...prev,
+                trackingWebsite: normalizedTrackingWebsite || undefined,
+                trackingNumber: normalizedTrackingNumber || undefined,
+              }
+            : null,
+        )
+      }
+    } finally {
+      setSavingTrackingId(null)
     }
   }
 
@@ -584,7 +617,11 @@ function OrdersTab() {
           order={viewingOrder}
           onClose={() => setViewingOrder(null)}
           onStatusChange={(status) => void handleStatusChange(viewingOrder._id, status)}
+          onTrackingSave={(trackingWebsite, trackingNumber) =>
+            void handleTrackingSave(viewingOrder._id, trackingWebsite, trackingNumber)
+          }
           updating={updatingId === viewingOrder._id}
+          trackingSaving={savingTrackingId === viewingOrder._id}
         />
       )}
     </>
@@ -597,15 +634,21 @@ function OrderDetailModal({
   order,
   onClose,
   onStatusChange,
+  onTrackingSave,
   updating,
+  trackingSaving,
 }: {
   order: Doc<'orders'>
   onClose: () => void
   onStatusChange: (status: Doc<'orders'>['status']) => void
+  onTrackingSave: (trackingWebsite: string, trackingNumber: string) => void
   updating: boolean
+  trackingSaving: boolean
 }) {
   const sd = getStatusDisplay(order.status)
   const billing = order.billingAddress
+  const [trackingWebsite, setTrackingWebsite] = useState(order.trackingWebsite ?? '')
+  const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber ?? '')
 
   const shippingAddr = (() => {
     if (!order.shippingAddress) return null
@@ -625,6 +668,11 @@ function OrderDetailModal({
   function formatDate(ts: number) {
     return new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'short' }).format(ts)
   }
+
+  useEffect(() => {
+    setTrackingWebsite(order.trackingWebsite ?? '')
+    setTrackingNumber(order.trackingNumber ?? '')
+  }, [order._id, order.trackingNumber, order.trackingWebsite])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -684,6 +732,64 @@ function OrderDetailModal({
               ))}
               {updating && <Loader2 className="h-4 w-4 animate-spin text-teal-500" />}
             </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tracking Details</p>
+              {(order.trackingWebsite || order.trackingNumber) && (
+                <span className="text-xs text-slate-400">Visible to the customer on their orders page</span>
+              )}
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                onTrackingSave(trackingWebsite, trackingNumber)
+              }}
+              className="space-y-3"
+            >
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-slate-600">Website</span>
+                  <input
+                    type="text"
+                    value={trackingWebsite}
+                    onChange={(e) => setTrackingWebsite(e.target.value)}
+                    placeholder="e.g. https://carrier.example/track"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-200"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-slate-600">Tracking Number</span>
+                  <input
+                    type="text"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder="Enter tracking number"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-200"
+                  />
+                </label>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={trackingSaving}
+                  className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                >
+                  {trackingSaving ? 'Saving...' : 'Save Tracking'}
+                </button>
+                {order.trackingWebsite && (
+                  <a
+                    href={normalizeTrackingWebsite(order.trackingWebsite)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm font-medium text-sky-700 underline underline-offset-2"
+                  >
+                    Open tracking website
+                  </a>
+                )}
+              </div>
+            </form>
           </div>
 
           {/* Billing address */}

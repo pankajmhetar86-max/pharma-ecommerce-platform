@@ -361,6 +361,26 @@ export const updateOrderStatus = mutation({
   },
 })
 
+export const updateOrderTracking = mutation({
+  args: {
+    id: v.id('orders'),
+    trackingWebsite: v.optional(v.string()),
+    trackingNumber: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+
+    const trackingWebsite = args.trackingWebsite?.trim()
+    const trackingNumber = args.trackingNumber?.trim()
+
+    await ctx.db.patch(args.id, {
+      trackingWebsite: trackingWebsite || undefined,
+      trackingNumber: trackingNumber || undefined,
+    })
+  },
+})
+
 // ── Slider images ─────────────────────────────────────────────────────────────
 
 export const listSliderImages = query({
