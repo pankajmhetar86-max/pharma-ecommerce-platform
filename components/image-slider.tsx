@@ -57,6 +57,7 @@ export function ImageSlider() {
             key={img._id}
             src={img.url}
             alt={img.altText ?? `Slide ${i + 1}`}
+            title={img.titleText ?? img.altText ?? `Slide ${i + 1}`}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}
           />
         ))}

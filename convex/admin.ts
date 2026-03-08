@@ -402,6 +402,7 @@ export const addSliderImage = mutation({
   args: {
     url: v.string(),
     altText: v.optional(v.string()),
+    titleText: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const admin = await getAdminUser(ctx)
@@ -412,6 +413,7 @@ export const addSliderImage = mutation({
     return ctx.db.insert('sliderImages', {
       url: args.url,
       altText: args.altText,
+      titleText: args.titleText,
       sortOrder: maxOrder + 1,
       isActive: true,
     })
@@ -422,6 +424,7 @@ export const updateSliderImage = mutation({
   args: {
     id: v.id('sliderImages'),
     altText: v.optional(v.string()),
+    titleText: v.optional(v.string()),
     isActive: v.boolean(),
   },
   handler: async (ctx, args) => {

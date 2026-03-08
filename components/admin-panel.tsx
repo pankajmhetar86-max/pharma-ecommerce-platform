@@ -983,6 +983,7 @@ function SliderTab() {
   const [uploadError, setUploadError] = useState('')
   const [urlInput, setUrlInput] = useState('')
   const [altInput, setAltInput] = useState('')
+  const [titleInput, setTitleInput] = useState('')
   const [addMode, setAddMode] = useState<'upload' | 'url'>('upload')
 
   const handleFileUpload = async (file: File) => {
@@ -1003,8 +1004,13 @@ function SliderTab() {
       const { storageId } = (await res.json()) as { storageId: string }
       const cdnUrl = await getUploadedImageUrl({ storageId })
       if (!cdnUrl) throw new Error('Could not resolve image URL')
-      await addSliderImage({ url: cdnUrl, altText: altInput.trim() || undefined })
+      await addSliderImage({
+        url: cdnUrl,
+        altText: altInput.trim() || undefined,
+        titleText: titleInput.trim() || undefined,
+      })
       setAltInput('')
+      setTitleInput('')
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
@@ -1015,9 +1021,14 @@ function SliderTab() {
   const handleAddUrl = async () => {
     if (!urlInput.trim()) return
     try {
-      await addSliderImage({ url: urlInput.trim(), altText: altInput.trim() || undefined })
+      await addSliderImage({
+        url: urlInput.trim(),
+        altText: altInput.trim() || undefined,
+        titleText: titleInput.trim() || undefined,
+      })
       setUrlInput('')
       setAltInput('')
+      setTitleInput('')
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Failed to add image')
     }
@@ -1104,9 +1115,16 @@ function SliderTab() {
             )}
             <input
               type="text"
-              placeholder="Alt text (for accessibility)"
+              placeholder="Alt tag"
               value={altInput}
               onChange={(e) => setAltInput(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+            />
+            <input
+              type="text"
+              placeholder="Alt title"
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
             />
           </div>
@@ -1130,10 +1148,20 @@ function SliderTab() {
               img={img}
               index={i + 1}
               onToggleActive={() =>
-                void updateSliderImage({ id: img._id, isActive: !img.isActive, altText: img.altText })
+                void updateSliderImage({
+                  id: img._id,
+                  isActive: !img.isActive,
+                  altText: img.altText,
+                  titleText: img.titleText,
+                })
               }
-              onUpdateAlt={(alt) =>
-                void updateSliderImage({ id: img._id, isActive: img.isActive, altText: alt || undefined })
+              onUpdateMeta={(alt, title) =>
+                void updateSliderImage({
+                  id: img._id,
+                  isActive: img.isActive,
+                  altText: alt || undefined,
+                  titleText: title || undefined,
+                })
               }
               onDelete={() => void deleteSliderImage({ id: img._id })}
             />
@@ -1148,16 +1176,17 @@ function SliderImageRow({
   img,
   index,
   onToggleActive,
-  onUpdateAlt,
+  onUpdateMeta,
   onDelete,
 }: {
   img: Doc<'sliderImages'>
   index: number
   onToggleActive: () => void
-  onUpdateAlt: (alt: string) => void
+  onUpdateMeta: (alt: string, title: string) => void
   onDelete: () => void
 }) {
   const [editAlt, setEditAlt] = useState(img.altText ?? '')
+  const [editTitle, setEditTitle] = useState(img.titleText ?? '')
   const [editing, setEditing] = useState(false)
 
   return (
@@ -1168,54 +1197,85 @@ function SliderImageRow({
       <img
         src={img.url}
         alt={img.altText ?? `Slide ${index}`}
+        title={img.titleText ?? img.altText ?? `Slide ${index}`}
         className="h-14 w-24 shrink-0 rounded-lg object-cover border border-slate-100"
       />
       <div className="flex-1 min-w-0">
         {editing ? (
           <div className="flex gap-2">
-            <input
-              autoFocus
-              type="text"
-              value={editAlt}
-              onChange={(e) => setEditAlt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  onUpdateAlt(editAlt)
+            <div className="flex-1 space-y-2">
+              <input
+                autoFocus
+                type="text"
+                value={editAlt}
+                onChange={(e) => setEditAlt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onUpdateMeta(editAlt, editTitle)
+                    setEditing(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditAlt(img.altText ?? '')
+                    setEditTitle(img.titleText ?? '')
+                    setEditing(false)
+                  }
+                }}
+                placeholder="Alt tag"
+                className="w-full rounded-lg border border-sky-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+              />
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onUpdateMeta(editAlt, editTitle)
+                    setEditing(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setEditAlt(img.altText ?? '')
+                    setEditTitle(img.titleText ?? '')
+                    setEditing(false)
+                  }
+                }}
+                placeholder="Alt title"
+                className="w-full rounded-lg border border-sky-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-sky-200"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateMeta(editAlt, editTitle)
                   setEditing(false)
-                }
-                if (e.key === 'Escape') {
+                }}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white hover:bg-sky-700"
+              >
+                <Check className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   setEditAlt(img.altText ?? '')
+                  setEditTitle(img.titleText ?? '')
                   setEditing(false)
-                }
-              }}
-              className="flex-1 rounded-lg border border-sky-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-sky-200"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                onUpdateAlt(editAlt)
-                setEditing(false)
-              }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white hover:bg-sky-700"
-            >
-              <Check className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditAlt(img.altText ?? '')
-                setEditing(false)
-              }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+                }}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <p className="truncate text-sm text-slate-700">
-              {img.altText ? img.altText : <span className="italic text-slate-400">No alt text</span>}
-            </p>
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm text-slate-700">
+                {img.altText ? img.altText : <span className="italic text-slate-400">No alt tag</span>}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-slate-500">
+                {img.titleText ? img.titleText : <span className="italic text-slate-400">No alt title</span>}
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setEditing(true)}

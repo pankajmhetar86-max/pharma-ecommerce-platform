@@ -133,6 +133,7 @@ export default defineSchema({
   sliderImages: defineTable({
     url: v.string(),
     altText: v.optional(v.string()),
+    titleText: v.optional(v.string()),
     sortOrder: v.number(),
     isActive: v.boolean(),
   }),
