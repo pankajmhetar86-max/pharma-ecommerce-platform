@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LogOut, Menu, Pill, Search, ShoppingCart, UserRound, X } from 'lucide-react'
 import { useQuery } from 'convex/react'
 import { useRouter } from 'next/navigation'
@@ -17,9 +17,22 @@ export function SiteHeader() {
   const cartItemCount = useQuery(api.cart.getItemCount) ?? 0
   const isAdmin = useQuery(api.admin.isAdmin)
   const router = useRouter()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      const q = searchInput.trim()
+      router.push(q ? `/products?q=${encodeURIComponent(q)}` : '/products')
+    }, 300)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [searchInput, router])
 
   const handleSearch = (event: { preventDefault: () => void }) => {
     event.preventDefault()
+    if (debounceRef.current) clearTimeout(debounceRef.current)
     const q = searchInput.trim()
     router.push(q ? `/products?q=${encodeURIComponent(q)}` : '/products')
     setIsMobileMenuOpen(false)
