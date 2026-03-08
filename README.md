@@ -38,3 +38,37 @@ Usually the recommended dose is _50 mg_ before sexual activity.
 - Physician-guided use
 - Trusted formulation
 ```
+
+## Home Page Schema Configuration
+
+The home page now supports configurable JSON-LD schema tags through [lib/site-inputs.ts](./lib/site-inputs.ts).
+
+Edit this section:
+
+```ts
+siteInputs.home.schema
+```
+
+Use it for business-level fields such as:
+
+- Organization name
+- Website URL
+- Logo path
+- Telephone
+- Email
+- Contact type
+- Area served
+- Languages
+- Local business address
+- Price range
+- Opening hours
+
+Auto-derived fields:
+
+- Product links
+- Product descriptions
+- Product prices
+- Product availability
+- Product images
+
+Those values are generated directly from the current storefront product data so they stay in sync and do not need manual editing.
