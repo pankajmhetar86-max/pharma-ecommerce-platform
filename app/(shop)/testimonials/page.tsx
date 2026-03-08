@@ -4,7 +4,7 @@ export default function TestimonialsPage() {
       <h1 className="mb-6 text-2xl font-bold text-slate-800">Testimonials</h1>
 
       <p className="mb-8 text-slate-600">
-        Here is what our customers say about their experience with secure.77pharmacy.com.
+        Here is what our customers say about their experience with pharma-ecommerce-platform-5an9.vercel.app.
       </p>
 
       <div className="space-y-6">

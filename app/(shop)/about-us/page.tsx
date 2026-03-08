@@ -5,7 +5,7 @@ export default function AboutUsPage() {
 
       <div className="space-y-5 text-slate-600">
         <p>
-          Welcome to secure.77pharmacy.com — your trusted source for pharmaceutical products delivered with discretion,
+          Welcome to pharma-ecommerce-platform-5an9.vercel.app — your trusted source for pharmaceutical products delivered with discretion,
           speed, and care.
         </p>
 

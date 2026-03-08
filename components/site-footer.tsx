@@ -46,7 +46,7 @@ export function SiteFooter() {
       </div>
 
       <div className="bg-slate-400 py-3 text-center text-xs text-white">
-        ©Copyright secure.77pharmacy.com. All rights reserved
+        ©Copyright pharma-ecommerce-platform-5an9.vercel.app. All rights reserved
       </div>
     </footer>
   )
