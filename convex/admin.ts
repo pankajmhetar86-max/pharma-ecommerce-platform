@@ -106,7 +106,7 @@ export const createProduct = mutation({
     if (!admin) throw new Error('Not authorized')
     await ensureCategoryExists(ctx, args.category)
     const slug = await resolveSlug(ctx, args.slug || `${args.name} ${args.genericName}`)
-    const searchText = `${args.name} ${args.genericName} ${args.category} ${args.description}`.toLowerCase()
+    const searchText = `${args.name} ${args.genericName}`.toLowerCase()
     return ctx.db.insert('products', { ...args, slug, searchText })
   },
 })
@@ -138,7 +138,7 @@ export const updateProduct = mutation({
     await ensureCategoryExists(ctx, args.category)
     const { id, ...fields } = args
     const slug = await resolveSlug(ctx, fields.slug || `${fields.name} ${fields.genericName}`, id)
-    const searchText = `${fields.name} ${fields.genericName} ${fields.category} ${fields.description}`.toLowerCase()
+    const searchText = `${fields.name} ${fields.genericName}`.toLowerCase()
     await ctx.db.patch(id, { ...fields, slug, searchText })
   },
 })
@@ -167,6 +167,22 @@ export const toggleVisibility = mutation({
     const admin = await getAdminUser(ctx)
     if (!admin) throw new Error('Not authorized')
     await ctx.db.patch(args.id, { isVisible: args.isVisible })
+  },
+})
+
+export const backfillSearchText = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    const products = await ctx.db.query('products').collect()
+    for (const product of products) {
+      const searchText = `${product.name} ${product.genericName}`.toLowerCase()
+      if (product.searchText !== searchText) {
+        await ctx.db.patch(product._id, { searchText })
+      }
+    }
+    return { updated: products.length }
   },
 })
 

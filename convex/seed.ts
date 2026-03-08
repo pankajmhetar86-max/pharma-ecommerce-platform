@@ -35,7 +35,7 @@ export const seedDatabase = mutation({
       for (const product of SEED_PRODUCTS) {
         await ctx.db.insert('products', {
           ...product,
-          searchText: `${product.name} ${product.genericName} ${product.category}`.toLowerCase(),
+          searchText: `${product.name} ${product.genericName}`.toLowerCase(),
         })
       }
     }

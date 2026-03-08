@@ -142,6 +142,7 @@ function ProductsTab() {
 
   const products = useQuery(api.admin.listAllProducts, { search: debouncedSearch || undefined })
   const backfillSlugs = useMutation(api.admin.backfillSlugs)
+  const backfillSearchText = useMutation(api.admin.backfillSearchText)
   const createProduct = useMutation(api.admin.createProduct)
   const updateProduct = useMutation(api.admin.updateProduct)
   const deleteProduct = useMutation(api.admin.deleteProduct)
@@ -152,6 +153,7 @@ function ProductsTab() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     void backfillSlugs()
+    void backfillSearchText()
   }, [])
 
   const handleSearchChange = (value: string) => {
