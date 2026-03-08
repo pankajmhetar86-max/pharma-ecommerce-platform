@@ -530,12 +530,13 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             <div className="sm:col-span-2">
               <label className={labelClass}>Full Product Description</label>
               <p className="mb-1.5 text-xs text-slate-400">
-                Shown in the collapsible tab at the bottom of the product page. Supports plain text with line breaks.
+                Shown in the collapsible tab at the bottom of the product page. Supports safe markdown: headings (`#` to
+                `######`), paragraphs, lists, bold, italics, inline code, and links. Raw HTML is not rendered.
               </p>
               <textarea
                 className={`${inputClass} resize-y`}
-                rows={8}
-                placeholder="Common use&#10;The main component of Viagra is Sildenafil Citrate...&#10;&#10;Dosage and direction&#10;Usually the recommended dose is 50 mg..."
+                rows={12}
+                placeholder="# Common Use&#10;The main component of Viagra is **Sildenafil Citrate**.&#10;&#10;## Dosage and Direction&#10;Usually the recommended dose is *50 mg* before sexual activity.&#10;&#10;### Key Benefits&#10;- Fast acting&#10;- Physician-guided use&#10;- Trusted formulation&#10;&#10;Read more at [Product Guide](https://example.com)"
                 value={form.fullDescription}
                 onChange={(e) => set('fullDescription', e.target.value)}
               />

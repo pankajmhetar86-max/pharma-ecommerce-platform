@@ -7,6 +7,7 @@ import { ChevronLeft, ShoppingCart, ChevronDown, ChevronUp, Check } from 'lucide
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
 import { authClient } from '@/lib/auth-client'
+import { renderMarkdownContent } from '@/lib/markdown'
 import { formatPrice } from '@/lib/utils'
 
 // ── Package row ────────────────────────────────────────────────────────────────
@@ -115,19 +116,7 @@ function ProductDescriptionAccordion({ content }: { content: string }) {
         <h2 className="text-lg font-bold text-slate-900">Product Description</h2>
         {open ? <ChevronUp className="h-5 w-5 text-slate-500" /> : <ChevronDown className="h-5 w-5 text-slate-500" />}
       </button>
-      {open && (
-        <div className="border-t border-slate-100 px-6 py-5">
-          {content.split('\n').map((line, i) =>
-            line.trim() === '' ? (
-              <br key={i} />
-            ) : (
-              <p key={i} className="mb-2 text-sm leading-6 text-slate-700">
-                {line}
-              </p>
-            ),
-          )}
-        </div>
-      )}
+      {open && <div className="border-t border-slate-100 px-6 py-5">{renderMarkdownContent(content)}</div>}
     </section>
   )
 }
