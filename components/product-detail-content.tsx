@@ -20,8 +20,6 @@ type PackageRowProps = {
   benefits: string[]
   expiryDate?: string
   unit: string
-  image: string
-  imageAlt?: string
   inStock: boolean
   onAddToCart: (dosage: string, pillCount: number) => void
   onIncreaseQuantity: (dosage: string, pillCount: number, quantity: number) => void
@@ -38,8 +36,6 @@ function PackageRow({
   benefits,
   expiryDate,
   unit,
-  image,
-  imageAlt,
   inStock,
   onAddToCart,
   onIncreaseQuantity,
@@ -49,6 +45,7 @@ function PackageRow({
 }: PackageRowProps) {
   const perUnit = price / pillCount
   const savings = originalPrice - price
+  const unitCountLabel = `${pillCount} ${unit}${pillCount === 1 ? '' : 's'}`
   const expiry = expiryDate ? new Date(`${expiryDate}T00:00:00`) : null
   const formattedExpiryDate =
     expiry && !Number.isNaN(expiry.valueOf())
@@ -56,23 +53,23 @@ function PackageRow({
       : expiryDate || null
 
   return (
-    <div className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition-all hover:border-teal-200 hover:bg-teal-50/30 md:grid-cols-[140px_1fr_1fr_auto]">
-      {/* Dosage + pill count */}
-      <div className="flex items-center gap-3 md:flex-col md:items-start md:gap-1">
-        <img src={image} alt={imageAlt ?? dosage} className="h-10 w-10 shrink-0 object-contain" />
-        <div>
-          <p className="text-sm font-bold text-slate-900">{dosage}</p>
-          <p className="text-xs text-slate-500">
-            {pillCount} {unit}s
-          </p>
-          {formattedExpiryDate && <p className="text-xs text-slate-400">Exp: {formattedExpiryDate}</p>}
-        </div>
+    <div className="grid gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-4 transition-all hover:border-teal-200 hover:bg-teal-50/30 md:grid-cols-[minmax(0,1.35fr)_minmax(120px,0.9fr)_minmax(160px,1.1fr)_140px] md:items-start">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 md:hidden">Quantity</p>
+        <p className="mt-1 text-sm font-semibold text-slate-900 md:mt-0">{unitCountLabel}</p>
+        {formattedExpiryDate && <p className="mt-1 text-xs text-slate-500">Expiry: {formattedExpiryDate}</p>}
+        {benefits.length > 0 && <p className="mt-1 text-xs text-teal-700">{benefits.join(' • ')}</p>}
       </div>
 
-      {/* Price */}
-      <div className="hidden md:block">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 md:hidden">Strength</p>
+        <p className="mt-1 text-sm font-semibold text-slate-900 md:mt-0">{dosage}</p>
+      </div>
+
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 md:hidden">Price</p>
         {originalPrice > price && <p className="text-xs text-slate-400 line-through">{formatPrice(originalPrice)}</p>}
-        <p className="text-lg font-extrabold text-slate-900">{formatPrice(price)}</p>
+        <p className="mt-1 text-lg font-extrabold text-slate-900">{formatPrice(price)}</p>
         <p className="text-xs text-slate-500">
           {formatPrice(perUnit)} / {unit}
         </p>
@@ -83,26 +80,9 @@ function PackageRow({
         )}
       </div>
 
-      {/* Benefits */}
-      <div className="hidden md:block space-y-1">
-        {benefits.map((b) => (
-          <p key={b} className="flex items-center gap-1 text-xs text-slate-600">
-            <span className="h-1 w-1 rounded-full bg-teal-500 shrink-0" />
-            {b}
-          </p>
-        ))}
-      </div>
-
-      {/* CTA */}
-      <div className="flex flex-col items-end gap-1">
-        {/* Price on mobile */}
-        <div className="mb-1 text-right md:hidden">
-          {originalPrice > price && <p className="text-xs text-slate-400 line-through">{formatPrice(originalPrice)}</p>}
-          <p className="text-base font-extrabold text-slate-900">{formatPrice(price)}</p>
-          {savings > 0 && <p className="text-xs font-semibold text-red-500">Save {formatPrice(savings)}</p>}
-        </div>
+      <div className="flex flex-col items-stretch gap-2 md:w-[140px] md:justify-self-end">
         {quantity > 0 ? (
-          <div className="inline-flex items-center rounded-full border border-slate-200 bg-white shadow-sm">
+          <div className="inline-flex items-center self-end rounded-full border border-slate-200 bg-white shadow-sm">
             <button
               type="button"
               disabled={updating || !inStock}
@@ -130,7 +110,7 @@ function PackageRow({
             type="button"
             disabled={updating || !inStock}
             onClick={() => onAddToCart(dosage, pillCount)}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-500 hover:to-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 self-end rounded-full bg-gradient-to-r from-teal-600 to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-500 hover:to-cyan-500 disabled:cursor-not-allowed disabled:opacity-60 md:min-w-[112px]"
           >
             {updating ? (
               <>
@@ -405,29 +385,35 @@ export function ProductDetailContent({ productId }: { productId: string }) {
 
           <div className="space-y-2 p-4">
             {hasPricingMatrix && selectedDosageData ? (
-              selectedDosageData.packages.map((pkg) => {
-                const key = getSelectionKey(selectedDosage ?? undefined, pkg.pillCount)
-                return (
-                  <PackageRow
-                    key={key}
-                    dosage={selectedDosage!}
-                    pillCount={pkg.pillCount}
-                    originalPrice={pkg.originalPrice}
-                    price={pkg.price}
-                    benefits={pkg.benefits ?? []}
-                    expiryDate={pkg.expiryDate}
-                    unit={product.unit}
-                    image={product.image}
-                    imageAlt={product.imageAlt}
-                    inStock={product.inStock}
-                    onAddToCart={(d, pc) => void handleAddToCart(d, pc)}
-                    onIncreaseQuantity={(d, pc) => void handleIncreaseQuantity(d, pc)}
-                    onDecreaseQuantity={(d, pc, quantity) => void handleDecreaseQuantity(d, pc, quantity)}
-                    quantity={getSelectionQuantity(selectedDosage ?? undefined, pkg.pillCount)}
-                    updating={updatingKey === key}
-                  />
-                )
-              })
+              <>
+                <div className="hidden grid-cols-[minmax(0,1.35fr)_minmax(120px,0.9fr)_minmax(160px,1.1fr)_140px] gap-3 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200 md:grid">
+                  <span className="text-left">Quantity</span>
+                  <span className="text-left">Strength</span>
+                  <span className="text-left">Price</span>
+                  <span className="justify-self-end text-right">Action</span>
+                </div>
+                {selectedDosageData.packages.map((pkg) => {
+                  const key = getSelectionKey(selectedDosage ?? undefined, pkg.pillCount)
+                  return (
+                    <PackageRow
+                      key={key}
+                      dosage={selectedDosage!}
+                      pillCount={pkg.pillCount}
+                      originalPrice={pkg.originalPrice}
+                      price={pkg.price}
+                      benefits={pkg.benefits ?? []}
+                      expiryDate={pkg.expiryDate}
+                      unit={product.unit}
+                      inStock={product.inStock}
+                      onAddToCart={(d, pc) => void handleAddToCart(d, pc)}
+                      onIncreaseQuantity={(d, pc) => void handleIncreaseQuantity(d, pc)}
+                      onDecreaseQuantity={(d, pc, quantity) => void handleDecreaseQuantity(d, pc, quantity)}
+                      quantity={getSelectionQuantity(selectedDosage ?? undefined, pkg.pillCount)}
+                      updating={updatingKey === key}
+                    />
+                  )
+                })}
+              </>
             ) : (
               <div className="flex items-center justify-between rounded-xl bg-slate-50 p-5">
                 <div>
