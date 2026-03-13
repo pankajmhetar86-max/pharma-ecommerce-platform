@@ -1,8 +1,15 @@
 import { convexBetterAuthNextJs } from '@convex-dev/better-auth/nextjs'
+import { ConvexHttpClient } from 'convex/browser'
 import { cookies, headers } from 'next/headers'
+import { api } from '@/convex/_generated/api'
 
 type AuthBridge = ReturnType<typeof convexBetterAuthNextJs>
 type AuthMethod = 'preloadAuthQuery' | 'fetchAuthQuery' | 'fetchAuthMutation' | 'fetchAuthAction'
+type SessionFallback = {
+  sessionToken: string
+  userId: string
+  email: string | null
+}
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
 const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL
@@ -28,6 +35,78 @@ function getAuthBridge(): AuthBridge | null {
 function logAuthServerWarning(context: string, error?: unknown) {
   // Keep SSR alive in production even if auth backend is temporarily unavailable.
   console.error(`[auth-server] ${context}`, error ?? authConfigError ?? 'Unknown auth error')
+}
+
+function normalizeEmail(email: string | null | undefined) {
+  return email?.trim().toLowerCase() ?? null
+}
+
+async function getAppUrl() {
+  const headerStore = await headers()
+  const proto = headerStore.get('x-forwarded-proto') ?? 'https'
+  const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
+  return process.env.NEXT_PUBLIC_APP_URL ?? (host ? `${proto}://${host}` : null)
+}
+
+async function getCookieHeader() {
+  const cookieStore = await cookies()
+  return cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${encodeURIComponent(value)}`)
+    .join('; ')
+}
+
+async function getSessionFallback(): Promise<SessionFallback | null> {
+  try {
+    const appUrl = await getAppUrl()
+    if (!appUrl) {
+      return null
+    }
+
+    const cookieHeader = await getCookieHeader()
+    const response = await fetch(`${appUrl}/api/auth/get-session`, {
+      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const session = (await response.json()) as {
+      session?: { token?: string | null } | null
+      user?: { id?: string | null; email?: string | null } | null
+    }
+
+    const sessionToken = session?.session?.token ?? null
+    const userId = session?.user?.id ?? null
+    if (!sessionToken || !userId) {
+      return null
+    }
+
+    return {
+      sessionToken,
+      userId,
+      email: normalizeEmail(session.user?.email),
+    }
+  } catch (error) {
+    logAuthServerWarning('Session fallback check failed.', error)
+    return null
+  }
+}
+
+async function getConvexJwtFromCookies() {
+  const cookieStore = await cookies()
+  const exactMatch = cookieStore.get('convex_jwt')?.value
+  if (exactMatch) {
+    return exactMatch
+  }
+  return (
+    cookieStore
+      .getAll()
+      .find(({ name }) => name === 'convex_jwt' || name.endsWith('.convex_jwt') || name.includes('convex_jwt'))
+      ?.value ?? null
+  )
 }
 
 export const handler: AuthBridge['handler'] = {
@@ -78,44 +157,26 @@ export const isAuthenticated: AuthBridge['isAuthenticated'] = async () => {
   if (token) {
     return true
   }
-  return await hasSessionFallback()
+  return Boolean(await getSessionFallback())
 }
 
-async function hasSessionFallback() {
-  try {
-    const headerStore = await headers()
-    const proto = headerStore.get('x-forwarded-proto') ?? 'https'
-    const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? (host ? `${proto}://${host}` : null)
-    if (!appUrl) {
-      return false
-    }
-
-    const cookieStore = await cookies()
-    const cookieHeader = cookieStore
-      .getAll()
-      .map(({ name, value }) => `${name}=${encodeURIComponent(value)}`)
-      .join('; ')
-
-    const response = await fetch(`${appUrl}/api/auth/get-session`, {
-      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
-      cache: 'no-store',
-    })
-
-    if (!response.ok) {
-      return false
-    }
-
-    const session = (await response.json()) as {
-      session?: { token?: string | null } | null
-      user?: { id?: string | null } | null
-    }
-
-    return Boolean(session?.session?.token && session?.user?.id)
-  } catch (error) {
-    logAuthServerWarning('Session fallback check failed.', error)
+export async function isAdminAuthenticated() {
+  const [session, convexJwt] = await Promise.all([getSessionFallback(), getConvexJwtFromCookies()])
+  if (!session && !convexJwt) {
     return false
   }
+
+  if (convexJwt && convexUrl) {
+    try {
+      const client = new ConvexHttpClient(convexUrl, { auth: convexJwt })
+      return await client.query(api.admin.isAdmin, {})
+    } catch (error) {
+      logAuthServerWarning('Admin check via Convex JWT failed.', error)
+    }
+  }
+
+  const configuredAdminEmail = normalizeEmail(process.env.ADMIN_EMAIL)
+  return Boolean(configuredAdminEmail && session?.email === configuredAdminEmail)
 }
 
 async function callAuthMethod(method: AuthMethod, args: unknown[]) {
