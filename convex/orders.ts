@@ -195,6 +195,7 @@ export const createPendingCryptoOrder = mutation({
 export const createNowPaymentsInvoice = action({
   args: {
     orderId: v.id('orders'),
+    payCurrency: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthenticatedUserId(ctx)
@@ -228,6 +229,7 @@ export const createNowPaymentsInvoice = action({
       body: JSON.stringify({
         price_amount: Number(order.total.toFixed(2)),
         price_currency: 'USD',
+        pay_currency: args.payCurrency ?? undefined,
         order_id: order._id,
         order_description: `Pharma order ${order._id}`,
         success_url: `${siteUrl}/orders`,

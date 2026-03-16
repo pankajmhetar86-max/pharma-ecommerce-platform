@@ -32,6 +32,13 @@ type ShippingForm = {
   zipCode: string
 }
 
+const CRYPTO_COINS = [
+  { value: 'btc', label: 'Bitcoin', symbol: 'BTC', color: 'text-orange-500' },
+  // { value: 'eth', label: 'Ethereum', symbol: 'ETH', color: 'text-violet-500' },
+  // { value: 'shib', label: 'Shiba Inu', symbol: 'SHIB', color: 'text-red-500' },
+  { value: 'doge', label: 'Dogecoin', symbol: 'DOGE', color: 'text-yellow-500' },
+] as const
+
 const MONTHS = [
   'January',
   'February',
@@ -112,6 +119,7 @@ export function CheckoutPageContent() {
   const [shipping, setShipping] = useState<ShippingForm>(EMPTY_SHIPPING)
   const [shippingSameAsBilling, setShippingSameAsBilling] = useState(false)
   const [isCryptoSubmitting, setIsCryptoSubmitting] = useState(false)
+  const [selectedCoin, setSelectedCoin] = useState<(typeof CRYPTO_COINS)[number]['value']>('btc')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const setBillingField = <K extends keyof BillingForm>(key: K, value: BillingForm[K]) =>
     setBilling((prev) => {
@@ -202,7 +210,7 @@ export function CheckoutPageContent() {
         billingAddress: buildBillingAddress(),
         shippingAddress: buildShippingAddress(),
       })
-      const { invoiceUrl } = await createNowPaymentsInvoice({ orderId })
+      const { invoiceUrl } = await createNowPaymentsInvoice({ orderId, payCurrency: selectedCoin })
       window.location.href = invoiceUrl
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to initiate crypto payment.')
@@ -491,6 +499,28 @@ export function CheckoutPageContent() {
 
         {errorMessage && <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{errorMessage}</p>}
 
+        {/* Coin selector */}
+        <div className="mb-4 border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-700">Select Cryptocurrency</p>
+          <div className="flex flex-wrap gap-2">
+            {CRYPTO_COINS.map((coin) => (
+              <button
+                key={coin.value}
+                type="button"
+                onClick={() => setSelectedCoin(coin.value)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
+                  selectedCoin === coin.value
+                    ? 'border-violet-500 bg-violet-50 text-violet-700 ring-2 ring-violet-300'
+                    : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
+                }`}
+              >
+                <span className={coin.color}>{coin.symbol}</span>
+                <span>{coin.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Action button */}
         <div className="flex flex-wrap items-center gap-3">
           <button
@@ -502,10 +532,10 @@ export function CheckoutPageContent() {
               'Redirecting...'
             ) : (
               <>
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" />
-                </svg>
-                Pay with Crypto (Required)
+                <span className="font-bold">
+                  {CRYPTO_COINS.find((c) => c.value === selectedCoin)?.symbol}
+                </span>
+                Pay with {CRYPTO_COINS.find((c) => c.value === selectedCoin)?.label}
               </>
             )}
           </button>
