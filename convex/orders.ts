@@ -220,7 +220,8 @@ export const createNowPaymentsInvoice = action({
     const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
     const convexSiteUrl = process.env.CONVEX_SITE_URL
 
-    const response = await fetch('https://api.nowpayments.io/v1/invoice', {
+    // const response = await fetch('https://api.nowpayments.io/v1/invoice', {
+    const response = await fetch('https://api-sandbox.nowpayments.io/v1/invoice', {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
@@ -236,6 +237,7 @@ export const createNowPaymentsInvoice = action({
         cancel_url: `${siteUrl}/checkout`,
         ipn_callback_url: convexSiteUrl ? `${convexSiteUrl}/nowpayments-ipn` : undefined,
         is_fee_paid_by_user: false,
+        "case": "success",
       }),
     })
 
