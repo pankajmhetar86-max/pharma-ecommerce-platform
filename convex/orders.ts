@@ -237,7 +237,6 @@ export const createNowPaymentsInvoice = action({
         cancel_url: `${siteUrl}/checkout`,
         ipn_callback_url: convexSiteUrl ? `${convexSiteUrl}/nowpayments-ipn` : undefined,
         is_fee_paid_by_user: false,
-        "case": "success",
       }),
     })
 
