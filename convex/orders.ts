@@ -218,7 +218,7 @@ export const createNowPaymentsInvoice = action({
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const convexSiteUrl = process.env.CONVEX_SITE_URL
+    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL
 
     // const response = await fetch('https://api.nowpayments.io/v1/invoice', {
     const response = await fetch('https://api-sandbox.nowpayments.io/v1/invoice', {

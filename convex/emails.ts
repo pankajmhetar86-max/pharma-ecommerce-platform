@@ -259,7 +259,7 @@ export const sendOrderConfirmationEmails = internalAction({
     }
 
     const adminEmail = process.env.ADMIN_EMAIL
-    const fromEmail = process.env.EMAIL_FROM ?? 'MedShop <onboarding@resend.dev>'
+    const fromEmail = process.env.EMAIL_FROM ?? 'onboarding@resend.dev'
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
     const order = await ctx.runQuery(internal.orders.getOrderById, {
