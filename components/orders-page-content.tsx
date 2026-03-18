@@ -119,6 +119,10 @@ function PaymentProofUpload({ order }: { order: Doc<'orders'> }) {
       setUploadError('Please select an image file.')
       return
     }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('File too large. Maximum size is 5 MB.')
+      return
+    }
     setUploadError(null)
     setUploading(true)
     try {

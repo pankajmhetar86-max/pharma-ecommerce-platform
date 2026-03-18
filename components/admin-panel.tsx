@@ -783,8 +783,15 @@ function OrderDetailModal({
 
           {/* ── Payment Proof Review ── */}
           {order.paymentProofStorageId && (
-            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4">
-              <p className="mb-3 text-sm font-semibold text-blue-800">Payment Proof Submitted</p>
+            <div className={`rounded-xl border px-4 py-4 ${order.status === 'pending_payment' && order.adminNote ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'}`}>
+              <div className="mb-3 flex items-center gap-2">
+                <p className={`text-sm font-semibold ${order.status === 'pending_payment' && order.adminNote ? 'text-red-800' : 'text-blue-800'}`}>
+                  Payment Proof {order.status === 'pending_payment' && order.adminNote ? '(Previously Rejected)' : 'Submitted'}
+                </p>
+                {order.status === 'pending_payment' && order.adminNote && (
+                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">Rejected</span>
+                )}
+              </div>
               {order.paymentProofUploadedAt && (
                 <p className="mb-3 text-xs text-blue-700">
                   Uploaded: {formatDate(order.paymentProofUploadedAt)}
@@ -795,7 +802,7 @@ function OrderDetailModal({
                   <img
                     src={paymentProofUrl}
                     alt="Payment proof"
-                    className="mb-3 max-h-64 w-full rounded-lg border border-blue-200 object-contain bg-white"
+                    className="mb-3 max-h-64 w-full rounded-lg border border-slate-200 object-contain bg-white"
                   />
                 </a>
               ) : (
@@ -805,7 +812,7 @@ function OrderDetailModal({
               )}
 
               {/* 3 action buttons */}
-              {(order.status === 'payment_review' || order.status === 'partial_payment') && paymentAction === 'none' && (
+              {(order.status === 'payment_review' || order.status === 'partial_payment' || order.status === 'pending_payment') && paymentAction === 'none' && (
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"

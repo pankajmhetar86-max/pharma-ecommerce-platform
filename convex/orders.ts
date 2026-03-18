@@ -233,6 +233,8 @@ export const generatePaymentProofUploadUrl = mutation({
   },
 })
 
+const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+
 export const savePaymentProof = mutation({
   args: {
     orderId: v.id('orders'),
@@ -240,11 +242,24 @@ export const savePaymentProof = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthenticatedUserId(ctx)
+
+    // Enforce 5 MB limit server-side — delete the file and reject if oversized
+    const metadata = await ctx.storage.getMetadata(args.storageId)
+    if (!metadata) {
+      throw new Error('Uploaded file not found')
+    }
+    if (metadata.size > MAX_PROOF_SIZE_BYTES) {
+      await ctx.storage.delete(args.storageId)
+      throw new Error('File too large. Maximum size is 5 MB.')
+    }
+
     const order = await ctx.db.get(args.orderId)
     if (!order || order.userId !== userId) {
+      await ctx.storage.delete(args.storageId)
       throw new Error('Order not found')
     }
     if (order.status === 'paid' || order.status === 'cancelled') {
+      await ctx.storage.delete(args.storageId)
       throw new Error('Cannot upload proof for this order status')
     }
     await ctx.db.patch(args.orderId, {
@@ -328,8 +343,6 @@ export const adminRejectPayment = internalMutation({
     if (!order) return
     await ctx.db.patch(args.orderId, {
       status: 'pending_payment',
-      paymentProofStorageId: undefined,
-      paymentProofUploadedAt: undefined,
       adminNote: args.adminNote,
     })
   },
