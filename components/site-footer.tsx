@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Pill, Bitcoin, Mail, Shield } from 'lucide-react'
+import { Pill, Mail, Shield } from 'lucide-react'
+import { CRYPTO_COINS } from '@/lib/crypto-coins'
 
 export function SiteFooter() {
   return (
@@ -22,11 +23,13 @@ export function SiteFooter() {
             <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
               Quality pharmaceutical products delivered to your doorstep. Your health, our mission.
             </p>
-            <div className="flex items-center gap-2">
-              <span className="rx-badge bg-orange-500/15 text-orange-400 border border-orange-500/20">
-                <Bitcoin className="h-3 w-3 mr-1" />
-                BTC Accepted
-              </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {CRYPTO_COINS.map((coin) => (
+                <span key={coin.value} className="rx-badge bg-slate-800 text-slate-300 border border-slate-700">
+                  <img src={coin.logo} alt={coin.symbol} className="h-3.5 w-3.5 mr-1" />
+                  {coin.symbol}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -93,11 +96,16 @@ export function SiteFooter() {
 
             <div className="mt-6 space-y-2">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Payment Methods</p>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-lg border border-orange-500/20 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-400">
-                  <Bitcoin className="h-3.5 w-3.5" />
-                  Bitcoin (BTC)
-                </span>
+              <div className="flex flex-wrap gap-2">
+                {CRYPTO_COINS.map((coin) => (
+                  <span
+                    key={coin.value}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300"
+                  >
+                    <img src={coin.logo} alt={coin.symbol} className="h-4 w-4" />
+                    {coin.label} ({coin.symbol})
+                  </span>
+                ))}
               </div>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { useAction, useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { COUNTRIES } from '@/lib/countries'
 import { formatPrice } from '@/lib/utils'
+import { CRYPTO_COINS } from '@/lib/crypto-coins'
 
 type BillingForm = {
   isNewCustomer: boolean
@@ -31,15 +32,6 @@ type ShippingForm = {
   state: string
   zipCode: string
 }
-
-const CRYPTO_COINS = [
-  { value: 'sol', label: 'Solana', symbol: 'SOL', color: 'text-purple-500' },
-  { value: 'xrp', label: 'XRP', symbol: 'XRP', color: 'text-blue-500' },
-  { value: 'ltc', label: 'Litecoin', symbol: 'LTC', color: 'text-slate-400' },
-  { value: 'doge', label: 'Dogecoin', symbol: 'DOGE', color: 'text-yellow-500' },
-  { value: 'btc', label: 'Bitcoin', symbol: 'BTC', color: 'text-orange-500' },
-  { value: 'usdttrc20', label: 'USDT (Tron)', symbol: 'USDT', color: 'text-green-500' },
-] as const
 
 const MONTHS = [
   'January',
@@ -516,7 +508,7 @@ export function CheckoutPageContent() {
                     : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
                 }`}
               >
-                <span className={coin.color}>{coin.symbol}</span>
+                <img src={coin.logo} alt={coin.symbol} className="h-4 w-4" />
                 <span>{coin.label}</span>
               </button>
             ))}
@@ -539,9 +531,10 @@ export function CheckoutPageContent() {
               'Redirecting...'
             ) : (
               <>
-                <span className="font-bold">
-                  {CRYPTO_COINS.find((c) => c.value === selectedCoin)?.symbol}
-                </span>
+                {(() => {
+                  const coin = CRYPTO_COINS.find((c) => c.value === selectedCoin)
+                  return coin ? <img src={coin.logo} alt={coin.symbol} className="h-4 w-4" /> : null
+                })()}
                 Pay with {CRYPTO_COINS.find((c) => c.value === selectedCoin)?.label}
               </>
             )}
