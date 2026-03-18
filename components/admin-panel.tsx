@@ -39,6 +39,8 @@ type Tab = 'products' | 'orders' | 'slider' | 'categories' | 'users'
 
 const ORDER_STATUSES = [
   { value: 'pending_payment', label: 'Pending Payment', color: 'bg-yellow-100 text-yellow-800' },
+  { value: 'payment_review', label: 'Payment Review', color: 'bg-blue-100 text-blue-800' },
+  { value: 'partial_payment', label: 'Partial Payment', color: 'bg-amber-100 text-amber-800' },
   { value: 'pending', label: 'Pending', color: 'bg-slate-100 text-slate-700' },
   { value: 'paid', label: 'Paid', color: 'bg-blue-100 text-blue-800' },
   { value: 'processing', label: 'Processing', color: 'bg-orange-100 text-orange-800' },
@@ -563,8 +565,8 @@ function OrdersTab() {
                       <td className="px-4 py-3 font-semibold text-slate-900">{formatPrice(order.total)}</td>
                       <td className="px-4 py-3">
                         {order.paymentMethod === 'crypto' ? (
-                          <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
-                            Crypto
+                          <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-700">
+                            ₿ Bitcoin
                           </span>
                         ) : (
                           <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
@@ -654,6 +656,21 @@ function OrderDetailModal({
   const [trackingWebsite, setTrackingWebsite] = useState(order.trackingWebsite ?? '')
   const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber ?? '')
 
+  // Payment review actions
+  const confirmPayment = useMutation(api.admin.adminConfirmPayment)
+  const markPartial = useMutation(api.admin.adminMarkPartialPayment)
+  const rejectPayment = useMutation(api.admin.adminRejectPayment)
+  const paymentProofUrl = useQuery(
+    api.admin.getOrderPaymentProofUrl,
+    order.paymentProofStorageId ? { id: order._id } : 'skip',
+  )
+
+  const [paymentAction, setPaymentAction] = useState<'none' | 'partial' | 'reject'>('none')
+  const [partialAmount, setPartialAmount] = useState('')
+  const [adminNote, setAdminNote] = useState('')
+  const [paymentActionLoading, setPaymentActionLoading] = useState(false)
+  const [paymentActionError, setPaymentActionError] = useState<string | null>(null)
+
   const shippingAddr = (() => {
     if (!order.shippingAddress) return null
     if ('sameAsBilling' in order.shippingAddress && order.shippingAddress.sameAsBilling) return null
@@ -677,6 +694,58 @@ function OrderDetailModal({
     setTrackingWebsite(order.trackingWebsite ?? '')
     setTrackingNumber(order.trackingNumber ?? '')
   }, [order._id, order.trackingNumber, order.trackingWebsite])
+
+  const handleConfirmPayment = async () => {
+    setPaymentActionLoading(true)
+    setPaymentActionError(null)
+    try {
+      await confirmPayment({ id: order._id })
+      onStatusChange('paid')
+    } catch (e) {
+      setPaymentActionError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setPaymentActionLoading(false)
+    }
+  }
+
+  const handleMarkPartial = async () => {
+    const received = parseFloat(partialAmount)
+    if (isNaN(received) || received <= 0 || received >= order.total) {
+      setPaymentActionError('Enter a valid amount less than the order total.')
+      return
+    }
+    setPaymentActionLoading(true)
+    setPaymentActionError(null)
+    try {
+      await markPartial({ id: order._id, amountReceived: received, adminNote: adminNote || undefined })
+      onStatusChange('partial_payment')
+      setPaymentAction('none')
+    } catch (e) {
+      setPaymentActionError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setPaymentActionLoading(false)
+    }
+  }
+
+  const handleReject = async () => {
+    setPaymentActionLoading(true)
+    setPaymentActionError(null)
+    try {
+      await rejectPayment({ id: order._id, adminNote: adminNote || undefined })
+      onStatusChange('pending_payment')
+      setPaymentAction('none')
+    } catch (e) {
+      setPaymentActionError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setPaymentActionLoading(false)
+    }
+  }
+
+  const pendingAmount = (() => {
+    const received = parseFloat(partialAmount)
+    if (isNaN(received) || received <= 0) return null
+    return Math.max(0, order.total - received)
+  })()
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -702,18 +771,175 @@ function OrderDetailModal({
           <div className="flex flex-wrap items-center gap-3">
             <span className={`rounded-full px-3 py-1 text-sm font-semibold ${sd.color}`}>{sd.label}</span>
             {order.paymentMethod === 'crypto' ? (
-              <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-semibold text-violet-700">
-                Crypto Payment
+              <span className="rounded-full bg-orange-100 px-3 py-1 text-sm font-semibold text-orange-700">
+                ₿ Bitcoin
               </span>
             ) : (
               <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">
                 Standard Payment
               </span>
             )}
-            {order.nowPaymentsId && (
-              <span className="text-xs text-slate-400">NOWPayments ID: {order.nowPaymentsId}</span>
-            )}
           </div>
+
+          {/* ── Payment Proof Review ── */}
+          {order.paymentProofStorageId && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4">
+              <p className="mb-3 text-sm font-semibold text-blue-800">Payment Proof Submitted</p>
+              {order.paymentProofUploadedAt && (
+                <p className="mb-3 text-xs text-blue-700">
+                  Uploaded: {formatDate(order.paymentProofUploadedAt)}
+                </p>
+              )}
+              {paymentProofUrl ? (
+                <a href={paymentProofUrl} target="_blank" rel="noreferrer">
+                  <img
+                    src={paymentProofUrl}
+                    alt="Payment proof"
+                    className="mb-3 max-h-64 w-full rounded-lg border border-blue-200 object-contain bg-white"
+                  />
+                </a>
+              ) : (
+                <div className="mb-3 flex h-32 items-center justify-center rounded-lg border border-blue-200 bg-white text-xs text-slate-400">
+                  Loading image...
+                </div>
+              )}
+
+              {/* 3 action buttons */}
+              {(order.status === 'payment_review' || order.status === 'partial_payment') && paymentAction === 'none' && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={paymentActionLoading}
+                    onClick={handleConfirmPayment}
+                    className="rounded-full bg-green-600 px-4 py-2 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                  >
+                    ✓ Mark as Paid
+                  </button>
+                  <button
+                    type="button"
+                    disabled={paymentActionLoading}
+                    onClick={() => { setPaymentAction('partial'); setAdminNote(''); setPartialAmount('') }}
+                    className="rounded-full bg-amber-500 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+                  >
+                    ⚠ Partial Payment
+                  </button>
+                  <button
+                    type="button"
+                    disabled={paymentActionLoading}
+                    onClick={() => { setPaymentAction('reject'); setAdminNote('') }}
+                    className="rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+                  >
+                    ✕ Reject
+                  </button>
+                  {paymentActionLoading && <Loader2 className="h-4 w-4 animate-spin text-slate-500" />}
+                </div>
+              )}
+
+              {/* Partial payment form */}
+              {paymentAction === 'partial' && (
+                <div className="mt-3 space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-xs font-semibold text-amber-800">Partial Payment Details</p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-500">Order Total</span>
+                      <p className="font-semibold text-slate-800">{formatPrice(order.total)}</p>
+                    </div>
+                    {pendingAmount !== null && (
+                      <div>
+                        <span className="text-slate-500">Pending Amount</span>
+                        <p className="font-semibold text-red-600">{formatPrice(pendingAmount)}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-700">Amount Received (USD)</label>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      max={order.total - 0.01}
+                      value={partialAmount}
+                      onChange={(e) => setPartialAmount(e.target.value)}
+                      placeholder={`0.00 – ${(order.total - 0.01).toFixed(2)}`}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-700">Note for customer (optional)</label>
+                    <input
+                      type="text"
+                      value={adminNote}
+                      onChange={(e) => setAdminNote(e.target.value)}
+                      placeholder="e.g. Please send the remaining balance within 30 days"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={paymentActionLoading}
+                      onClick={handleMarkPartial}
+                      className="rounded-full bg-amber-500 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+                    >
+                      {paymentActionLoading ? 'Saving...' : 'Confirm Partial'}
+                    </button>
+                    <button type="button" onClick={() => setPaymentAction('none')} className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Reject form */}
+              {paymentAction === 'reject' && (
+                <div className="mt-3 space-y-3 rounded-lg border border-red-200 bg-red-50 p-4">
+                  <p className="text-xs font-semibold text-red-800">Reject Payment Proof</p>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-700">Reason for rejection (optional)</label>
+                    <input
+                      type="text"
+                      value={adminNote}
+                      onChange={(e) => setAdminNote(e.target.value)}
+                      placeholder="e.g. Screenshot unclear, amount mismatch"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-200"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={paymentActionLoading}
+                      onClick={handleReject}
+                      className="rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {paymentActionLoading ? 'Rejecting...' : 'Confirm Rejection'}
+                    </button>
+                    <button type="button" onClick={() => setPaymentAction('none')} className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {paymentActionError && (
+                <p className="mt-2 text-xs text-red-600">{paymentActionError}</p>
+              )}
+            </div>
+          )}
+
+          {/* BTC payment info */}
+          {order.btcAmountDue && (
+            <div className="rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 text-xs">
+              <p className="mb-2 font-semibold text-orange-800">₿ Bitcoin Payment Details</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-slate-600">
+                <div><span className="text-slate-400">BTC Amount Due</span><p className="font-semibold">{order.btcAmountDue} BTC</p></div>
+                {order.btcPriceUsd && <div><span className="text-slate-400">BTC Price Used</span><p className="font-semibold">{formatPrice(order.btcPriceUsd)}</p></div>}
+                {order.partialAmountReceived != null && <div><span className="text-slate-400">Received (USD)</span><p className="font-semibold text-green-700">{formatPrice(order.partialAmountReceived)}</p></div>}
+                {order.partialAmountPending != null && <div><span className="text-slate-400">Pending (USD)</span><p className="font-semibold text-red-600">{formatPrice(order.partialAmountPending)}</p></div>}
+                {order.partialPaymentDueAt && <div className="col-span-2"><span className="text-slate-400">Payment due by </span><span className="font-semibold text-amber-700">{new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(order.partialPaymentDueAt)}</span></div>}
+              </div>
+              {order.adminNote && <p className="mt-2 rounded-md bg-amber-100 px-2 py-1 text-amber-800"><span className="font-semibold">Note: </span>{order.adminNote}</p>}
+            </div>
+          )}
 
           {/* Update status */}
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -946,31 +1172,8 @@ function OrderDetailModal({
               </div>
               <div>
                 <dt className="text-slate-400">Payment method</dt>
-                <dd className="capitalize text-slate-700">{order.paymentMethod ?? '—'}</dd>
+                <dd className="capitalize text-slate-700">{order.paymentMethod === 'crypto' ? '₿ Bitcoin' : (order.paymentMethod ?? '—')}</dd>
               </div>
-              {order.nowPaymentsId && (
-                <div>
-                  <dt className="text-slate-400">NOWPayments ID</dt>
-                  <dd className="font-mono text-slate-700">{order.nowPaymentsId}</dd>
-                </div>
-              )}
-              {order.payAmount != null && order.payCurrency && (
-                <>
-                  <div>
-                    <dt className="text-slate-400">Expected</dt>
-                    <dd className="font-semibold text-slate-700">{order.payAmount} {order.payCurrency.toUpperCase()}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-slate-400">Received</dt>
-                    <dd className={`font-semibold ${(order.amountPaid ?? 0) < order.payAmount ? 'text-red-600' : 'text-green-600'}`}>
-                      {order.amountPaid ?? 0} {order.payCurrency.toUpperCase()}
-                      {(order.amountPaid ?? 0) < order.payAmount && (
-                        <span className="ml-1 text-red-400">(short by {(order.payAmount - (order.amountPaid ?? 0)).toFixed(8)})</span>
-                      )}
-                    </dd>
-                  </div>
-                </>
-              )}
             </dl>
           </div>
         </div>
@@ -1977,7 +2180,6 @@ function UserOrdersModal({
                     <th className="px-4 py-3">Total</th>
                     <th className="px-4 py-3">Payment</th>
                     <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Payment Ref</th>
                     <th className="px-4 py-3 text-right">Details</th>
                   </tr>
                 </thead>
@@ -2005,11 +2207,11 @@ function UserOrdersModal({
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                               order.paymentMethod === 'crypto'
-                                ? 'bg-violet-100 text-violet-700'
+                                ? 'bg-orange-100 text-orange-700'
                                 : 'bg-slate-100 text-slate-600'
                             }`}
                           >
-                            {order.paymentMethod === 'crypto' ? 'Crypto' : 'Standard'}
+                            {order.paymentMethod === 'crypto' ? '₿ Bitcoin' : 'Standard'}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -2017,7 +2219,6 @@ function UserOrdersModal({
                             {status.label}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-500">{order.nowPaymentsId ?? '—'}</td>
                         <td className="px-4 py-3 text-right">
                           <button
                             type="button"

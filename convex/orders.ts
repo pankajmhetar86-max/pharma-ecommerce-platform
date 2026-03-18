@@ -1,4 +1,4 @@
-import { action, internalMutation, internalQuery, mutation, query } from './_generated/server'
+import { internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 import type { ActionCtx, MutationCtx, QueryCtx } from './_generated/server'
 import { internal } from './_generated/api'
@@ -163,11 +163,20 @@ export const createFromCart = mutation({
     shippingAddress: shippingAddressArg,
   },
   handler: async () => {
-    throw new Error('Standard checkout is disabled. Please use crypto payment.')
+    throw new Error('Standard checkout is disabled. Please use Bitcoin payment.')
   },
 })
 
-export const createPendingCryptoOrder = mutation({
+// ── BTC Direct Payment ─────────────────────────────────────────────────────────
+
+export const getBtcWalletAddress = query({
+  args: {},
+  handler: async () => {
+    return process.env.BTC_WALLET_ADDRESS ?? null
+  },
+})
+
+export const createBtcOrder = mutation({
   args: {
     billingAddress: billingAddressArg,
     shippingAddress: shippingAddressArg,
@@ -188,124 +197,161 @@ export const createPendingCryptoOrder = mutation({
       billingAddress: args.billingAddress,
       shippingAddress: args.shippingAddress,
     })
+
+    // Clear cart
+    await ctx.db.patch(cart._id, { items: [], total: 0, updatedAt: Date.now() })
+
     return { orderId, total }
   },
 })
 
-export const createNowPaymentsInvoice = action({
+export const saveBtcPaymentDetails = mutation({
   args: {
     orderId: v.id('orders'),
-    payCurrency: v.optional(v.string()),
+    btcAmountDue: v.number(),
+    btcPriceUsd: v.number(),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthenticatedUserId(ctx)
-    const order = await ctx.runQuery(internal.orders.getOrderById, {
-      orderId: args.orderId,
-    })
+    const order = await ctx.db.get(args.orderId)
     if (!order || order.userId !== userId) {
       throw new Error('Order not found')
     }
-    if (order.paymentMethod !== 'crypto') {
-      throw new Error('Invalid payment method')
-    }
-    if (order.status !== 'pending_payment') {
-      throw new Error('Order is not awaiting payment')
-    }
-
-    const apiKey = process.env.NOWPAYMENTS_API_KEY
-    if (!apiKey) {
-      throw new Error('Payment provider not configured')
-    }
-
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL
-
-    const response = await fetch('https://api.nowpayments.io/v1/invoice', {
-    // const response = await fetch('https://api-sandbox.nowpayments.io/v1/invoice', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        price_amount: Number(order.total.toFixed(2)),
-        price_currency: 'USD',
-        pay_currency: args.payCurrency ?? undefined,
-        order_id: order._id,
-        order_description: `Pharma order ${order._id}`,
-        success_url: `${siteUrl}/orders`,
-        cancel_url: `${siteUrl}/checkout`,
-        ipn_callback_url: convexSiteUrl ? `${convexSiteUrl}/nowpayments-ipn` : undefined,
-        is_fee_paid_by_user: false,
-      }),
+    await ctx.db.patch(args.orderId, {
+      btcAmountDue: args.btcAmountDue,
+      btcPriceUsd: args.btcPriceUsd,
+      btcPriceUpdatedAt: Date.now(),
     })
-
-    if (!response.ok) {
-      const text = await response.text()
-      console.error('NOWPayments error:', text)
-      throw new Error('Failed to create payment invoice')
-    }
-
-    const data = (await response.json()) as { invoice_url: string }
-    await ctx.runMutation(internal.orders.saveInvoiceUrl, {
-      orderId: args.orderId,
-      invoiceUrl: data.invoice_url,
-    })
-    await ctx.runMutation(internal.cart.clearCartForUser, { userId })
-    return { invoiceUrl: data.invoice_url }
   },
 })
 
-export const saveInvoiceUrl = internalMutation({
-  args: { orderId: v.id('orders'), invoiceUrl: v.string() },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.orderId, { invoiceUrl: args.invoiceUrl })
+export const generatePaymentProofUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await getAuthenticatedUserId(ctx)
+    return ctx.storage.generateUploadUrl()
   },
 })
 
-export const confirmCryptoPayment = internalMutation({
+export const savePaymentProof = mutation({
   args: {
     orderId: v.id('orders'),
-    nowPaymentsId: v.string(),
-    amountPaid: v.optional(v.number()),
-    payAmount: v.optional(v.number()),
-    payCurrency: v.optional(v.string()),
+    storageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthenticatedUserId(ctx)
     const order = await ctx.db.get(args.orderId)
-    if (!order || order.paymentMethod !== 'crypto') return
-    if (order.status === 'paid' && order.nowPaymentsId === args.nowPaymentsId) return
-    if (order.status !== 'pending_payment') return
+    if (!order || order.userId !== userId) {
+      throw new Error('Order not found')
+    }
+    if (order.status === 'paid' || order.status === 'cancelled') {
+      throw new Error('Cannot upload proof for this order status')
+    }
+    await ctx.db.patch(args.orderId, {
+      paymentProofStorageId: args.storageId,
+      paymentProofUploadedAt: Date.now(),
+      status: 'payment_review',
+    })
+  },
+})
+
+export const getPaymentProofUrl = query({
+  args: { orderId: v.id('orders') },
+  handler: async (ctx, args) => {
+    const userId = await getAuthenticatedUserId(ctx)
+    const order = await ctx.db.get(args.orderId)
+    if (!order || order.userId !== userId) return null
+    if (!order.paymentProofStorageId) return null
+    return ctx.storage.getUrl(order.paymentProofStorageId)
+  },
+})
+
+export const getPaymentProofUrlInternal = internalQuery({
+  args: { storageId: v.id('_storage') },
+  handler: async (ctx, args) => {
+    return ctx.storage.getUrl(args.storageId)
+  },
+})
+
+// ── Admin payment review actions ───────────────────────────────────────────────
+
+export const adminConfirmPayment = internalMutation({
+  args: { orderId: v.id('orders') },
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId)
+    if (!order) return
     await ctx.db.patch(args.orderId, {
       status: 'paid',
-      nowPaymentsId: args.nowPaymentsId,
-      ...(args.amountPaid !== undefined && { amountPaid: args.amountPaid }),
-      ...(args.payAmount !== undefined && { payAmount: args.payAmount }),
-      ...(args.payCurrency !== undefined && { payCurrency: args.payCurrency }),
+      partialAmountReceived: undefined,
+      partialAmountPending: undefined,
+      partialPaymentDueAt: undefined,
     })
-    await ctx.scheduler.runAfter(0, internal.emails.sendOrderConfirmationEmails, {
+    await ctx.scheduler.runAfter(0, internal.emails.sendPaymentConfirmedEmail, {
       orderId: args.orderId,
     })
   },
 })
 
-export const updatePartialCryptoPayment = internalMutation({
+export const adminMarkPartialPayment = internalMutation({
   args: {
     orderId: v.id('orders'),
-    nowPaymentsId: v.string(),
-    amountPaid: v.number(),
-    payAmount: v.number(),
-    payCurrency: v.string(),
+    amountReceived: v.number(),
+    adminNote: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId)
-    if (!order || order.paymentMethod !== 'crypto') return
-    if (order.status !== 'pending_payment') return
+    if (!order) return
+    const amountPending = Number((order.total - args.amountReceived).toFixed(2))
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
     await ctx.db.patch(args.orderId, {
-      nowPaymentsId: args.nowPaymentsId,
-      amountPaid: args.amountPaid,
-      payAmount: args.payAmount,
-      payCurrency: args.payCurrency,
+      status: 'partial_payment',
+      partialAmountReceived: args.amountReceived,
+      partialAmountPending: amountPending,
+      partialPaymentDueAt: Date.now() + thirtyDaysMs,
+      adminNote: args.adminNote,
     })
+    await ctx.scheduler.runAfter(0, internal.emails.sendPartialPaymentEmail, {
+      orderId: args.orderId,
+      amountReceived: args.amountReceived,
+      amountPending,
+    })
+  },
+})
+
+export const adminRejectPayment = internalMutation({
+  args: {
+    orderId: v.id('orders'),
+    adminNote: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId)
+    if (!order) return
+    await ctx.db.patch(args.orderId, {
+      status: 'pending_payment',
+      paymentProofStorageId: undefined,
+      paymentProofUploadedAt: undefined,
+      adminNote: args.adminNote,
+    })
+  },
+})
+
+// ── Auto-cancel helper (called by cron) ───────────────────────────────────────
+
+export const cancelExpiredOrders = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+    const expiredOrders = await ctx.db
+      .query('orders')
+      .filter((q) =>
+        q.and(
+          q.eq(q.field('status'), 'pending_payment'),
+          q.lt(q.field('createdAt'), sevenDaysAgo),
+        ),
+      )
+      .collect()
+    for (const order of expiredOrders) {
+      await ctx.db.patch(order._id, { status: 'cancelled' })
+    }
   },
 })

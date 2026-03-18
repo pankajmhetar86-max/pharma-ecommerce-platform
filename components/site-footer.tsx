@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Pill, Mail, Shield } from 'lucide-react'
-import { CRYPTO_COINS } from '@/lib/crypto-coins'
 
 export function SiteFooter() {
   return (
@@ -24,12 +23,9 @@ export function SiteFooter() {
               Quality pharmaceutical products delivered to your doorstep. Your health, our mission.
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              {CRYPTO_COINS.map((coin) => (
-                <span key={coin.value} className="rx-badge bg-slate-800 text-slate-300 border border-slate-700">
-                  <img src={coin.logo} alt={coin.symbol} className="h-3.5 w-3.5 mr-1" />
-                  {coin.symbol}
-                </span>
-              ))}
+              <span className="rx-badge bg-slate-800 text-slate-300 border border-slate-700">
+                ₿ BTC
+              </span>
             </div>
           </div>
 
@@ -97,15 +93,9 @@ export function SiteFooter() {
             <div className="mt-6 space-y-2">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Payment Methods</p>
               <div className="flex flex-wrap gap-2">
-                {CRYPTO_COINS.map((coin) => (
-                  <span
-                    key={coin.value}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300"
-                  >
-                    <img src={coin.logo} alt={coin.symbol} className="h-4 w-4" />
-                    {coin.label} ({coin.symbol})
-                  </span>
-                ))}
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300">
+                  ₿ Bitcoin (BTC)
+                </span>
               </div>
             </div>
           </div>

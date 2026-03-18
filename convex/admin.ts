@@ -1,4 +1,5 @@
 import { mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
 import { v } from 'convex/values'
 import type { Id } from './_generated/dataModel'
 import { authComponent } from './auth'
@@ -518,6 +519,8 @@ export const updateOrderStatus = mutation({
     id: v.id('orders'),
     status: v.union(
       v.literal('pending_payment'),
+      v.literal('payment_review'),
+      v.literal('partial_payment'),
       v.literal('pending'),
       v.literal('paid'),
       v.literal('processing'),
@@ -530,6 +533,58 @@ export const updateOrderStatus = mutation({
     const admin = await getAdminUser(ctx)
     if (!admin) throw new Error('Not authorized')
     await ctx.db.patch(args.id, { status: args.status })
+  },
+})
+
+export const adminConfirmPayment = mutation({
+  args: { id: v.id('orders') },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    await ctx.runMutation(internal.orders.adminConfirmPayment, { orderId: args.id })
+  },
+})
+
+export const adminMarkPartialPayment = mutation({
+  args: {
+    id: v.id('orders'),
+    amountReceived: v.number(),
+    adminNote: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    await ctx.runMutation(internal.orders.adminMarkPartialPayment, {
+      orderId: args.id,
+      amountReceived: args.amountReceived,
+      adminNote: args.adminNote,
+    })
+  },
+})
+
+export const adminRejectPayment = mutation({
+  args: {
+    id: v.id('orders'),
+    adminNote: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    await ctx.runMutation(internal.orders.adminRejectPayment, {
+      orderId: args.id,
+      adminNote: args.adminNote,
+    })
+  },
+})
+
+export const getOrderPaymentProofUrl = query({
+  args: { id: v.id('orders') },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) return null
+    const order = await ctx.db.get(args.id)
+    if (!order?.paymentProofStorageId) return null
+    return ctx.storage.getUrl(order.paymentProofStorageId)
   },
 })
 

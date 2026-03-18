@@ -249,6 +249,164 @@ async function sendEmail(opts: { apiKey: string; from: string; to: string; subje
   }
 }
 
+function partialPaymentEmailHtml(opts: {
+  firstName: string
+  orderId: string
+  total: number
+  amountReceived: number
+  amountPending: number
+  dueDate: string
+  appUrl: string
+}) {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="100%" style="max-width:600px;" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:12px 12px 0 0;padding:28px 32px;text-align:center;">
+            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">PharmaCare</h1>
+            <p style="margin:6px 0 0;color:#fef3c7;font-size:14px;">Partial Payment Received</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;padding:32px;">
+            <div style="display:inline-block;background:#fef3c71a;color:#d97706;border-radius:20px;padding:6px 16px;font-size:13px;font-weight:600;margin-bottom:16px;">
+              ⚠ Partial Payment Received
+            </div>
+            <h2 style="margin:0 0 8px;color:#0f172a;font-size:20px;">Hi ${opts.firstName},</h2>
+            <p style="margin:0 0 24px;color:#475569;line-height:1.6;">
+              We received a partial payment for your order. Please send the remaining balance by <strong>${opts.dueDate}</strong> to complete your order.
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:24px;">
+              <tr>
+                <td style="color:#64748b;font-size:13px;">Order ID</td>
+                <td style="text-align:right;font-family:monospace;font-size:13px;color:#0f172a;font-weight:600;">${opts.orderId}</td>
+              </tr>
+              <tr>
+                <td style="color:#64748b;font-size:13px;padding-top:8px;">Order Total</td>
+                <td style="text-align:right;font-size:13px;color:#0f172a;padding-top:8px;">${formatPrice(opts.total)}</td>
+              </tr>
+              <tr>
+                <td style="color:#64748b;font-size:13px;padding-top:8px;">Amount Received</td>
+                <td style="text-align:right;font-size:13px;color:#16a34a;font-weight:600;padding-top:8px;">${formatPrice(opts.amountReceived)}</td>
+              </tr>
+              <tr>
+                <td style="color:#64748b;font-size:13px;padding-top:8px;">Amount Pending</td>
+                <td style="text-align:right;font-size:15px;color:#dc2626;font-weight:700;padding-top:8px;">${formatPrice(opts.amountPending)}</td>
+              </tr>
+              <tr>
+                <td style="color:#64748b;font-size:13px;padding-top:8px;">Payment Due By</td>
+                <td style="text-align:right;font-size:13px;color:#d97706;font-weight:600;padding-top:8px;">${opts.dueDate}</td>
+              </tr>
+            </table>
+            <p style="color:#475569;font-size:13px;line-height:1.6;">
+              Please send the remaining amount to our Bitcoin wallet and upload a screenshot of the transaction on your orders page.
+            </p>
+            <div style="text-align:center;margin-top:32px;">
+              <a href="${opts.appUrl}/orders"
+                style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:25px;font-weight:600;font-size:15px;">
+                View My Orders &amp; Upload Proof
+              </a>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;border-radius:0 0 12px 12px;padding:20px 32px;text-align:center;border-top:1px solid #e2e8f0;">
+            <p style="margin:0;color:#94a3b8;font-size:12px;">
+              © ${new Date().getFullYear()} PharmaCare. All rights reserved.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+export const sendPaymentConfirmedEmail = internalAction({
+  args: { orderId: v.id('orders') },
+  handler: async (ctx, args) => {
+    const resendKey = process.env.RESEND_API_KEY
+    if (!resendKey) return
+
+    const fromEmail = process.env.EMAIL_FROM ?? 'onboarding@resend.dev'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+    const order = await ctx.runQuery(internal.orders.getOrderById, {
+      orderId: args.orderId as Id<'orders'>,
+    })
+    if (!order) return
+
+    const customerEmail = order.billingAddress?.email
+    const firstName = order.billingAddress?.firstName ?? 'Customer'
+
+    if (customerEmail) {
+      await sendEmail({
+        apiKey: resendKey,
+        from: `PharmaCare <${fromEmail}>`,
+        to: customerEmail,
+        subject: `Payment Confirmed – Order #${order._id}`,
+        html: userEmailHtml({
+          firstName,
+          orderId: order._id,
+          total: order.total,
+          items: order.items,
+          paymentMethod: 'crypto',
+          appUrl,
+        }),
+      })
+    }
+  },
+})
+
+export const sendPartialPaymentEmail = internalAction({
+  args: {
+    orderId: v.id('orders'),
+    amountReceived: v.number(),
+    amountPending: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const resendKey = process.env.RESEND_API_KEY
+    if (!resendKey) return
+
+    const fromEmail = process.env.EMAIL_FROM ?? 'onboarding@resend.dev'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+    const order = await ctx.runQuery(internal.orders.getOrderById, {
+      orderId: args.orderId as Id<'orders'>,
+    })
+    if (!order) return
+
+    const customerEmail = order.billingAddress?.email
+    const firstName = order.billingAddress?.firstName ?? 'Customer'
+    const dueDate = order.partialPaymentDueAt
+      ? new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(order.partialPaymentDueAt)
+      : 'in 30 days'
+
+    if (customerEmail) {
+      await sendEmail({
+        apiKey: resendKey,
+        from: `PharmaCare <${fromEmail}>`,
+        to: customerEmail,
+        subject: `Partial Payment Received – Order #${order._id}`,
+        html: partialPaymentEmailHtml({
+          firstName,
+          orderId: order._id,
+          total: order.total,
+          amountReceived: args.amountReceived,
+          amountPending: args.amountPending,
+          dueDate,
+          appUrl,
+        }),
+      })
+    }
+  },
+})
+
 export const sendOrderConfirmationEmails = internalAction({
   args: { orderId: v.id('orders') },
   handler: async (ctx, args) => {

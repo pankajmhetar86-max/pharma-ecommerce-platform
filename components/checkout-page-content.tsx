@@ -1,11 +1,12 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
-import { useAction, useMutation, useQuery } from 'convex/react'
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
+import type { Id } from '@/convex/_generated/dataModel'
 import { COUNTRIES } from '@/lib/countries'
 import { formatPrice } from '@/lib/utils'
-import { CRYPTO_COINS } from '@/lib/crypto-coins'
+import QRCode from 'react-qr-code'
 
 type BillingForm = {
   isNewCustomer: boolean
@@ -34,18 +35,8 @@ type ShippingForm = {
 }
 
 const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
 const currentYear = new Date().getFullYear()
@@ -104,21 +95,262 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
+// ── BTC Payment Panel ──────────────────────────────────────────────────────────
+
+const BTC_PRICE_REFRESH_MS = 20 * 60 * 1000 // 20 minutes
+
+async function fetchBtcPriceUsd(): Promise<number> {
+  const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
+  if (!res.ok) throw new Error('Failed to fetch BTC price')
+  const data = (await res.json()) as { price: string }
+  return parseFloat(data.price)
+}
+
+function BtcPaymentPanel({
+  orderId,
+  orderTotal,
+  btcAddress,
+  onProofUploaded,
+}: {
+  orderId: Id<'orders'>
+  orderTotal: number
+  btcAddress: string
+  onProofUploaded: () => void
+}) {
+  const saveBtcDetails = useMutation(api.orders.saveBtcPaymentDetails)
+  const generateUploadUrl = useMutation(api.orders.generatePaymentProofUploadUrl)
+  const savePaymentProof = useMutation(api.orders.savePaymentProof)
+
+  const [btcPrice, setBtcPrice] = useState<number | null>(null)
+  const [btcAmount, setBtcAmount] = useState<number | null>(null)
+  const [priceUpdatedAt, setPriceUpdatedAt] = useState<Date | null>(null)
+  const [priceError, setPriceError] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [proofUploaded, setProofUploaded] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const loadAndSaveBtcPrice = useCallback(async () => {
+    try {
+      setPriceError(false)
+      const price = await fetchBtcPriceUsd()
+      const amount = Number((orderTotal / price).toFixed(8))
+      setBtcPrice(price)
+      setBtcAmount(amount)
+      setPriceUpdatedAt(new Date())
+      await saveBtcDetails({ orderId, btcAmountDue: amount, btcPriceUsd: price })
+    } catch {
+      setPriceError(true)
+    }
+  }, [orderId, orderTotal, saveBtcDetails])
+
+  useEffect(() => {
+    loadAndSaveBtcPrice()
+    refreshTimerRef.current = setInterval(loadAndSaveBtcPrice, BTC_PRICE_REFRESH_MS)
+    return () => {
+      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current)
+    }
+  }, [loadAndSaveBtcPrice])
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(btcAddress)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file (JPEG, PNG, etc.).')
+      return
+    }
+    setUploadError(null)
+    setUploading(true)
+    try {
+      const uploadUrl = await generateUploadUrl()
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      })
+      if (!res.ok) throw new Error('Upload failed')
+      const { storageId } = (await res.json()) as { storageId: string }
+      await savePaymentProof({ orderId, storageId: storageId as Id<'_storage'> })
+      setProofUploaded(true)
+      onProofUploaded()
+    } catch {
+      setUploadError('Upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const qrValue = btcAmount ? `bitcoin:${btcAddress}?amount=${btcAmount}` : `bitcoin:${btcAddress}`
+
+  if (proofUploaded) {
+    return (
+      <div className="mx-auto max-w-lg rounded-2xl border border-green-200 bg-green-50 p-8 text-center shadow-sm">
+        <div className="mb-3 flex items-center justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+            <svg className="h-7 w-7 text-green-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        </div>
+        <h2 className="text-lg font-bold text-green-800">Payment Proof Submitted!</h2>
+        <p className="mt-2 text-sm text-green-700">
+          We&apos;ve received your payment screenshot. Our team will verify and confirm your order shortly.
+        </p>
+        <a
+          href="/orders"
+          className="mt-5 inline-block rounded-full bg-green-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-green-700"
+        >
+          View My Orders
+        </a>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto max-w-lg space-y-5">
+      {/* Header */}
+      <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4">
+        <p className="text-sm font-semibold text-orange-800">
+          ₿ Send Bitcoin to complete your order
+        </p>
+        <p className="mt-1 text-xs text-orange-700">
+          Scan the QR code or copy the wallet address below. The BTC amount refreshes every 20 minutes to reflect the current price.
+        </p>
+      </div>
+
+      {/* QR + Amount */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm text-center">
+        {btcAmount ? (
+          <>
+            <div className="mb-4 inline-block rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+              <QRCode value={qrValue} size={192} />
+            </div>
+
+            <div className="mb-3 space-y-1">
+              <p className="text-2xl font-extrabold text-slate-900">
+                {btcAmount} <span className="text-orange-500">BTC</span>
+              </p>
+              <p className="text-sm text-slate-500">
+                ≈ {formatPrice(orderTotal)} at {formatPrice(btcPrice ?? 0)}/BTC
+              </p>
+            </div>
+
+            {priceUpdatedAt && (
+              <p className="mb-4 text-xs text-slate-400">
+                Price updated at {priceUpdatedAt.toLocaleTimeString()} · refreshes every 20 min
+              </p>
+            )}
+
+            {/* Wallet address */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Bitcoin Wallet Address
+              </p>
+              <div className="flex items-center gap-2">
+                <p className="flex-1 break-all font-mono text-xs text-slate-700">{btcAddress}</p>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="shrink-0 rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+                >
+                  {copied ? '✓ Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
+          </>
+        ) : priceError ? (
+          <div className="py-8">
+            <p className="text-sm text-red-600">Failed to fetch BTC price.</p>
+            <button
+              type="button"
+              onClick={loadAndSaveBtcPrice}
+              className="mt-3 rounded-full bg-slate-800 px-4 py-2 text-xs font-semibold text-white"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <div className="py-8 flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
+            <p className="text-sm text-slate-500">Fetching live BTC price...</p>
+          </div>
+        )}
+      </div>
+
+      {/* Upload proof */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="mb-1 text-sm font-semibold text-slate-800">Upload Payment Screenshot</p>
+        <p className="mb-4 text-xs text-slate-500">
+          After sending Bitcoin, upload a screenshot of your transaction confirmation.
+        </p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) handleFileUpload(file)
+          }}
+        />
+        <button
+          type="button"
+          disabled={uploading || !btcAmount}
+          onClick={() => fileInputRef.current?.click()}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 py-4 text-sm font-semibold text-slate-600 hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {uploading ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-400 border-t-transparent" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              Click to upload payment screenshot
+            </>
+          )}
+        </button>
+        {uploadError && <p className="mt-2 text-xs text-red-600">{uploadError}</p>}
+        <p className="mt-3 text-xs text-slate-400">
+          You can also upload proof later from your{' '}
+          <a href="/orders" className="font-medium text-sky-600 underline underline-offset-2">
+            Orders page
+          </a>
+          .
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Checkout Component ────────────────────────────────────────────────────
+
 export function CheckoutPageContent() {
   const cart = useQuery(api.cart.getMyCart)
-  const createPendingCryptoOrder = useMutation(api.orders.createPendingCryptoOrder)
-  const createNowPaymentsInvoice = useAction(api.orders.createNowPaymentsInvoice)
+  const btcAddress = useQuery(api.orders.getBtcWalletAddress)
+  const createBtcOrder = useMutation(api.orders.createBtcOrder)
 
   const [billing, setBilling] = useState<BillingForm>(EMPTY_BILLING)
   const [shipping, setShipping] = useState<ShippingForm>(EMPTY_SHIPPING)
   const [shippingSameAsBilling, setShippingSameAsBilling] = useState(false)
-  const [isCryptoSubmitting, setIsCryptoSubmitting] = useState(false)
-  const [selectedCoin, setSelectedCoin] = useState<(typeof CRYPTO_COINS)[number]['value']>('btc')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [orderId, setOrderId] = useState<Id<'orders'> | null>(null)
+  const [orderTotal, setOrderTotal] = useState(0)
+  const [proofSubmitted, setProofSubmitted] = useState(false)
+
   const setBillingField = <K extends keyof BillingForm>(key: K, value: BillingForm[K]) =>
     setBilling((prev) => {
       const next = { ...prev, [key]: value }
-      // Reset state when country changes
       if (key === 'country') next.state = ''
       return next
     })
@@ -184,10 +416,6 @@ export function CheckoutPageContent() {
 
   const handleCheckoutSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    await handleCryptoCheckout()
-  }
-
-  const handleCryptoCheckout = async () => {
     setErrorMessage(null)
     if (!cart || cart.items.length === 0) {
       setErrorMessage('Your cart is empty.')
@@ -198,21 +426,25 @@ export function CheckoutPageContent() {
       setErrorMessage(validationError)
       return
     }
+    if (!btcAddress) {
+      setErrorMessage('Bitcoin payment is not configured. Please contact support.')
+      return
+    }
     try {
-      setIsCryptoSubmitting(true)
-      const { orderId } = await createPendingCryptoOrder({
+      setIsSubmitting(true)
+      const { orderId: newOrderId, total } = await createBtcOrder({
         billingAddress: buildBillingAddress(),
         shippingAddress: buildShippingAddress(),
       })
-      const { invoiceUrl } = await createNowPaymentsInvoice({ orderId, payCurrency: selectedCoin })
-      window.location.href = invoiceUrl
+      setOrderId(newOrderId)
+      setOrderTotal(total)
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to initiate crypto payment.')
-      setIsCryptoSubmitting(false)
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to create order.')
+      setIsSubmitting(false)
     }
   }
 
-  if (cart === undefined) {
+  if (cart === undefined || btcAddress === undefined) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
         <p className="text-sm text-slate-500">Loading checkout...</p>
@@ -222,6 +454,34 @@ export function CheckoutPageContent() {
 
   const cartEmpty = !cart || cart.items.length === 0
 
+  // Show payment panel once order is created
+  if (orderId) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-extrabold text-slate-900">Complete Your Payment</h1>
+          <p className="mt-1 text-sm text-slate-500">Order created — send Bitcoin to the address below.</p>
+        </div>
+        {!proofSubmitted && btcAddress ? (
+          <BtcPaymentPanel
+            orderId={orderId}
+            orderTotal={orderTotal}
+            btcAddress={btcAddress}
+            onProofUploaded={() => setProofSubmitted(true)}
+          />
+        ) : (
+          <div className="mx-auto max-w-lg rounded-2xl border border-green-200 bg-green-50 p-8 text-center shadow-sm">
+            <p className="text-lg font-bold text-green-800">Payment Proof Submitted!</p>
+            <p className="mt-2 text-sm text-green-700">We'll verify and confirm your order shortly.</p>
+            <a href="/orders" className="mt-5 inline-block rounded-full bg-green-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-green-700">
+              View My Orders
+            </a>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto grid max-w-7xl gap-5 px-4 py-6 lg:grid-cols-[1fr_320px] lg:px-6">
       <form onSubmit={handleCheckoutSubmit}>
@@ -230,7 +490,6 @@ export function CheckoutPageContent() {
           <SectionHeader number={1} title="Billing Address" />
 
           <div className="space-y-4">
-            {/* New customer */}
             <Field label="New Customer?:">
               <div className="relative">
                 <select
@@ -245,7 +504,6 @@ export function CheckoutPageContent() {
               </div>
             </Field>
 
-            {/* Mobile Phone */}
             <Field label="Mobile Phone:">
               <input
                 type="tel"
@@ -256,7 +514,6 @@ export function CheckoutPageContent() {
               />
             </Field>
 
-            {/* E-Mail */}
             <Field label="E-Mail:">
               <input
                 type="email"
@@ -267,7 +524,6 @@ export function CheckoutPageContent() {
               />
             </Field>
 
-            {/* Date of Birth */}
             <Field label="Date of Birth:">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -278,9 +534,7 @@ export function CheckoutPageContent() {
                   >
                     <option value="">year</option>
                     {YEARS.map((y) => (
-                      <option key={y} value={String(y)}>
-                        {y}
-                      </option>
+                      <option key={y} value={String(y)}>{y}</option>
                     ))}
                   </select>
                   <span className="pointer-events-none absolute right-2 top-2.5 text-xs text-slate-400">▾</span>
@@ -294,9 +548,7 @@ export function CheckoutPageContent() {
                   >
                     <option value="">month</option>
                     {MONTHS.map((m, i) => (
-                      <option key={m} value={String(i + 1).padStart(2, '0')}>
-                        {m}
-                      </option>
+                      <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>
                     ))}
                   </select>
                   <span className="pointer-events-none absolute right-2 top-2.5 text-xs text-slate-400">▾</span>
@@ -310,9 +562,7 @@ export function CheckoutPageContent() {
                   >
                     <option value="">day</option>
                     {DAYS.map((d) => (
-                      <option key={d} value={String(d)}>
-                        {d}
-                      </option>
+                      <option key={d} value={String(d)}>{d}</option>
                     ))}
                   </select>
                   <span className="pointer-events-none absolute right-2 top-2.5 text-xs text-slate-400">▾</span>
@@ -320,93 +570,48 @@ export function CheckoutPageContent() {
               </div>
             </Field>
 
-            {/* First + Last Name */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="First Name:">
-                <input
-                  type="text"
-                  className={inputClass}
-                  value={billing.firstName}
-                  onChange={(e) => setBillingField('firstName', e.target.value)}
-                />
+                <input type="text" className={inputClass} value={billing.firstName} onChange={(e) => setBillingField('firstName', e.target.value)} />
               </Field>
               <Field label="Last Name:">
-                <input
-                  type="text"
-                  className={inputClass}
-                  value={billing.lastName}
-                  onChange={(e) => setBillingField('lastName', e.target.value)}
-                />
+                <input type="text" className={inputClass} value={billing.lastName} onChange={(e) => setBillingField('lastName', e.target.value)} />
               </Field>
             </div>
 
-            {/* Street Address */}
             <Field label="Street Address:">
-              <input
-                type="text"
-                className={inputClass}
-                value={billing.streetAddress}
-                onChange={(e) => setBillingField('streetAddress', e.target.value)}
-              />
+              <input type="text" className={inputClass} value={billing.streetAddress} onChange={(e) => setBillingField('streetAddress', e.target.value)} />
             </Field>
 
-            {/* City */}
             <Field label="City:">
-              <input
-                type="text"
-                className={inputClass}
-                value={billing.city}
-                onChange={(e) => setBillingField('city', e.target.value)}
-              />
+              <input type="text" className={inputClass} value={billing.city} onChange={(e) => setBillingField('city', e.target.value)} />
             </Field>
 
-            {/* Country */}
             <Field label="Country:">
               <div className="relative">
-                <select
-                  className={selectClass}
-                  value={billing.country}
-                  onChange={(e) => setBillingField('country', e.target.value)}
-                >
+                <select className={selectClass} value={billing.country} onChange={(e) => setBillingField('country', e.target.value)}>
                   {COUNTRIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.name}
-                    </option>
+                    <option key={c.code} value={c.code}>{c.name}</option>
                   ))}
                 </select>
                 <span className="pointer-events-none absolute right-3 top-2.5 text-slate-400">▾</span>
               </div>
             </Field>
 
-            {/* State / Province */}
             <Field label="State / Province:">
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="State / Province"
-                value={billing.state}
-                onChange={(e) => setBillingField('state', e.target.value)}
-              />
+              <input type="text" className={inputClass} placeholder="State / Province" value={billing.state} onChange={(e) => setBillingField('state', e.target.value)} />
             </Field>
 
-            {/* ZIP */}
             <Field label="ZIP/Postal Code:">
-              <input
-                type="text"
-                className={inputClass}
-                value={billing.zipCode}
-                onChange={(e) => setBillingField('zipCode', e.target.value)}
-              />
+              <input type="text" className={inputClass} value={billing.zipCode} onChange={(e) => setBillingField('zipCode', e.target.value)} />
             </Field>
           </div>
 
-          {/* Shipping section (inside the same card) */}
+          {/* Shipping section */}
           <div className="mt-6">
             <h3 className="mb-4 text-center text-sm font-bold uppercase tracking-widest text-sky-700">
               Shipping Address
             </h3>
-
-            {/* "Same as Billing" checkbox - shown first so users can skip the form */}
             <label className="mb-4 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
@@ -421,125 +626,64 @@ export function CheckoutPageContent() {
               <div className="space-y-4 mb-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Field label="First Name:">
-                    <input
-                      type="text"
-                      className={inputClass}
-                      value={shipping.firstName}
-                      onChange={(e) => setShippingField('firstName', e.target.value)}
-                    />
+                    <input type="text" className={inputClass} value={shipping.firstName} onChange={(e) => setShippingField('firstName', e.target.value)} />
                   </Field>
                   <Field label="Last Name:">
-                    <input
-                      type="text"
-                      className={inputClass}
-                      value={shipping.lastName}
-                      onChange={(e) => setShippingField('lastName', e.target.value)}
-                    />
+                    <input type="text" className={inputClass} value={shipping.lastName} onChange={(e) => setShippingField('lastName', e.target.value)} />
                   </Field>
                 </div>
                 <Field label="Street Address:">
-                  <input
-                    type="text"
-                    className={inputClass}
-                    value={shipping.streetAddress}
-                    onChange={(e) => setShippingField('streetAddress', e.target.value)}
-                  />
+                  <input type="text" className={inputClass} value={shipping.streetAddress} onChange={(e) => setShippingField('streetAddress', e.target.value)} />
                 </Field>
                 <Field label="City:">
-                  <input
-                    type="text"
-                    className={inputClass}
-                    value={shipping.city}
-                    onChange={(e) => setShippingField('city', e.target.value)}
-                  />
+                  <input type="text" className={inputClass} value={shipping.city} onChange={(e) => setShippingField('city', e.target.value)} />
                 </Field>
                 <Field label="Country:">
                   <div className="relative">
-                    <select
-                      className={selectClass}
-                      value={shipping.country}
-                      onChange={(e) => setShippingField('country', e.target.value)}
-                    >
+                    <select className={selectClass} value={shipping.country} onChange={(e) => setShippingField('country', e.target.value)}>
                       {COUNTRIES.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.name}
-                        </option>
+                        <option key={c.code} value={c.code}>{c.name}</option>
                       ))}
                     </select>
                     <span className="pointer-events-none absolute right-3 top-2.5 text-slate-400">▾</span>
                   </div>
                 </Field>
                 <Field label="State / Province:">
-                  <input
-                    type="text"
-                    className={inputClass}
-                    placeholder="State / Province"
-                    value={shipping.state}
-                    onChange={(e) => setShippingField('state', e.target.value)}
-                  />
+                  <input type="text" className={inputClass} placeholder="State / Province" value={shipping.state} onChange={(e) => setShippingField('state', e.target.value)} />
                 </Field>
                 <Field label="ZIP/Postal Code:">
-                  <input
-                    type="text"
-                    className={inputClass}
-                    value={shipping.zipCode}
-                    onChange={(e) => setShippingField('zipCode', e.target.value)}
-                  />
+                  <input type="text" className={inputClass} value={shipping.zipCode} onChange={(e) => setShippingField('zipCode', e.target.value)} />
                 </Field>
               </div>
             )}
           </div>
         </div>
 
-        {errorMessage && <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{errorMessage}</p>}
+        {/* BTC payment notice */}
+        <div className="mb-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+          <p className="font-semibold">₿ Bitcoin Payment</p>
+          <p className="mt-0.5 text-xs text-orange-700">
+            After placing your order, you&apos;ll receive a Bitcoin wallet address and QR code. Send the exact BTC amount and upload your transaction screenshot to confirm payment.
+          </p>
+        </div>
 
-        {/* Coin selector */}
-        <div className="mb-4 border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-700">Select Cryptocurrency</p>
-          <div className="flex flex-wrap gap-2">
-            {CRYPTO_COINS.map((coin) => (
-              <button
-                key={coin.value}
-                type="button"
-                onClick={() => setSelectedCoin(coin.value)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
-                  selectedCoin === coin.value
-                    ? 'border-violet-500 bg-violet-50 text-violet-700 ring-2 ring-violet-300'
-                    : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400'
-                }`}
-              >
-                <img src={coin.logo} alt={coin.symbol} className="h-4 w-4" />
-                <span>{coin.label}</span>
-              </button>
-            ))}
+        {!btcAddress && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Bitcoin wallet address is not configured. Please contact support before placing an order.
           </div>
-        </div>
+        )}
 
-        {/* Withdrawal fee warning */}
-        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          ⚠️ If your exchange charges a withdrawal fee, add that fee <strong>on top of</strong> the shown amount when sending. Sending less than required will result in a partial payment and your order will not be confirmed automatically.
-        </p>
+        {errorMessage && (
+          <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{errorMessage}</p>
+        )}
 
-        {/* Action button */}
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            disabled={isCryptoSubmitting || cartEmpty}
-            className="inline-flex items-center gap-2 rounded-full bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isCryptoSubmitting ? (
-              'Redirecting...'
-            ) : (
-              <>
-                {(() => {
-                  const coin = CRYPTO_COINS.find((c) => c.value === selectedCoin)
-                  return coin ? <img src={coin.logo} alt={coin.symbol} className="h-4 w-4" /> : null
-                })()}
-                Pay with {CRYPTO_COINS.find((c) => c.value === selectedCoin)?.label}
-              </>
-            )}
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={isSubmitting || cartEmpty || !btcAddress}
+          className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSubmitting ? 'Creating order...' : 'Place Order & Pay with Bitcoin'}
+        </button>
       </form>
 
       {/* Order Summary */}
@@ -558,9 +702,7 @@ export function CheckoutPageContent() {
         <div className="mt-3 border-t border-slate-200 pt-3 text-sm">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-slate-900">Total</span>
-            <div className="text-right">
-              <span className="text-lg font-bold text-slate-900">{formatPrice(cart?.total ?? 0)}</span>
-            </div>
+            <span className="text-lg font-bold text-slate-900">{formatPrice(cart?.total ?? 0)}</span>
           </div>
         </div>
       </aside>
