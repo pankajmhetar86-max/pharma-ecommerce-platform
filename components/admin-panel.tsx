@@ -664,6 +664,7 @@ function OrderDetailModal({
     api.admin.getOrderPaymentProofUrl,
     order.paymentProofStorageId ? { id: order._id } : 'skip',
   )
+  const proofHistory = useQuery(api.admin.getPaymentProofHistory, { id: order._id })
 
   const [paymentAction, setPaymentAction] = useState<'none' | 'partial' | 'reject'>('none')
   const [partialAmount, setPartialAmount] = useState('')
@@ -780,6 +781,70 @@ function OrderDetailModal({
               </span>
             )}
           </div>
+
+          {/* ── Past Payment Proof History ── */}
+          {proofHistory && proofHistory.length > 0 && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="mb-3 text-sm font-semibold text-slate-700">Past Payment Proofs</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-left text-slate-500">
+                      <th className="pb-2 pr-4 font-semibold">#</th>
+                      <th className="pb-2 pr-4 font-semibold">Uploaded</th>
+                      <th className="pb-2 pr-4 font-semibold">Decision</th>
+                      <th className="pb-2 pr-4 font-semibold">Note</th>
+                      <th className="pb-2 font-semibold">Proof</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {proofHistory.map((entry, i) => (
+                      <tr key={entry.storageId} className="text-slate-600">
+                        <td className="py-2 pr-4 font-mono text-slate-400">{i + 1}</td>
+                        <td className="py-2 pr-4 whitespace-nowrap">
+                          {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(entry.uploadedAt)}
+                        </td>
+                        <td className="py-2 pr-4">
+                          <span
+                            className={`rounded-full px-2 py-0.5 font-semibold ${
+                              entry.decision === 'paid'
+                                ? 'bg-green-100 text-green-700'
+                                : entry.decision === 'partial_payment'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-red-100 text-red-700'
+                            }`}
+                          >
+                            {entry.decision === 'paid'
+                              ? 'Paid'
+                              : entry.decision === 'partial_payment'
+                                ? 'Partial Payment'
+                                : 'Rejected'}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 text-slate-500 max-w-[160px] truncate">
+                          {entry.adminNote ?? <span className="text-slate-300">—</span>}
+                        </td>
+                        <td className="py-2">
+                          {entry.url ? (
+                            <a
+                              href={entry.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-semibold text-blue-600 hover:underline"
+                            >
+                              View ↗
+                            </a>
+                          ) : (
+                            <span className="text-slate-300">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* ── Payment Proof Review ── */}
           {order.paymentProofStorageId && (

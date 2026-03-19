@@ -133,6 +133,21 @@ export default defineSchema({
     trackingWebsite: v.optional(v.string()),
     trackingNumber: v.optional(v.string()),
     invoiceUrl: v.optional(v.string()), // legacy: to be removed after migration
+    paymentProofHistory: v.optional(
+      v.array(
+        v.object({
+          storageId: v.id('_storage'),
+          uploadedAt: v.number(),
+          decision: v.union(
+            v.literal('paid'),
+            v.literal('partial_payment'),
+            v.literal('rejected'),
+          ),
+          decidedAt: v.number(),
+          adminNote: v.optional(v.string()),
+        }),
+      ),
+    ),
     billingAddress: v.optional(billingAddressValidator),
     shippingAddress: v.optional(
       v.union(

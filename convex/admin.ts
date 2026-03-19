@@ -588,6 +588,26 @@ export const getOrderPaymentProofUrl = query({
   },
 })
 
+export const getPaymentProofHistory = query({
+  args: { id: v.id('orders') },
+  handler: async (ctx, args) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) return null
+    const order = await ctx.db.get(args.id)
+    if (!order?.paymentProofHistory?.length) return []
+    return Promise.all(
+      order.paymentProofHistory.map(async (entry) => ({
+        storageId: entry.storageId,
+        uploadedAt: entry.uploadedAt,
+        decision: entry.decision,
+        decidedAt: entry.decidedAt,
+        adminNote: entry.adminNote,
+        url: await ctx.storage.getUrl(entry.storageId),
+      })),
+    )
+  },
+})
+
 export const updateOrderTracking = mutation({
   args: {
     id: v.id('orders'),

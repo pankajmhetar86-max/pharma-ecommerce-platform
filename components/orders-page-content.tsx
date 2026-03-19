@@ -150,7 +150,9 @@ function PaymentProofUpload({ order }: { order: Doc<'orders'> }) {
         {order.status === 'partial_payment' ? 'Upload Remaining Payment Proof' : 'Upload Payment Screenshot'}
       </p>
       <p className="mb-3 text-xs text-orange-700">
-        Upload a screenshot of your Bitcoin transaction to confirm your payment.
+        {order.status === 'partial_payment'
+          ? 'Once you send the remaining amount, upload a screenshot of the transaction below.'
+          : 'Upload a screenshot of your Bitcoin transaction to confirm your payment.'}
       </p>
       <input
         ref={fileInputRef}
@@ -258,7 +260,7 @@ function BtcPaymentDetails({ order }: { order: Doc<'orders'> }) {
           </div>
         </div>
       )}
-      {order.adminNote && (
+      {order.status === 'partial_payment' && order.adminNote && (
         <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           <span className="font-semibold">Note: </span>{order.adminNote}
         </div>
@@ -281,6 +283,26 @@ function PaymentReviewBanner({ order }: { order: Doc<'orders'> }) {
           : 'recently'}
         . We&apos;ll confirm your payment shortly.
       </p>
+    </div>
+  )
+}
+
+// ── Payment Rejected Banner ────────────────────────────────────────────────────
+
+function PaymentRejectedBanner({ order }: { order: Doc<'orders'> }) {
+  if (order.status !== 'pending_payment') return null
+  if (!order.adminNote || !order.paymentProofStorageId) return null
+  return (
+    <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm">
+      <p className="font-semibold text-red-800">✕ Payment Proof Rejected</p>
+      <p className="mt-0.5 text-xs text-red-700">
+        Your previously submitted proof was not accepted. Please upload a new screenshot.
+      </p>
+      {order.adminNote && (
+        <p className="mt-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-red-700">
+          <span className="font-semibold">Reason: </span>{order.adminNote}
+        </p>
+      )}
     </div>
   )
 }
@@ -345,6 +367,9 @@ export function OrdersPageContent() {
 
                   {/* Payment review banner */}
                   <PaymentReviewBanner order={order} />
+
+                  {/* Payment rejected banner */}
+                  <PaymentRejectedBanner order={order} />
 
                   {/* Upload proof button */}
                   <PaymentProofUpload order={order} />

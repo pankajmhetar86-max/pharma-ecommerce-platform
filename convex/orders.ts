@@ -295,11 +295,23 @@ export const adminConfirmPayment = internalMutation({
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId)
     if (!order) return
+    const historyEntry =
+      order.paymentProofStorageId
+        ? {
+            storageId: order.paymentProofStorageId,
+            uploadedAt: order.paymentProofUploadedAt ?? Date.now(),
+            decision: 'paid' as const,
+            decidedAt: Date.now(),
+          }
+        : null
     await ctx.db.patch(args.orderId, {
       status: 'paid',
       partialAmountReceived: undefined,
       partialAmountPending: undefined,
       partialPaymentDueAt: undefined,
+      paymentProofHistory: historyEntry
+        ? [...(order.paymentProofHistory ?? []), historyEntry]
+        : order.paymentProofHistory,
     })
     await ctx.scheduler.runAfter(0, internal.emails.sendPaymentConfirmedEmail, {
       orderId: args.orderId,
@@ -318,12 +330,25 @@ export const adminMarkPartialPayment = internalMutation({
     if (!order) return
     const amountPending = Number((order.total - args.amountReceived).toFixed(2))
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
+    const historyEntry =
+      order.paymentProofStorageId
+        ? {
+            storageId: order.paymentProofStorageId,
+            uploadedAt: order.paymentProofUploadedAt ?? Date.now(),
+            decision: 'partial_payment' as const,
+            decidedAt: Date.now(),
+            adminNote: args.adminNote,
+          }
+        : null
     await ctx.db.patch(args.orderId, {
       status: 'partial_payment',
       partialAmountReceived: args.amountReceived,
       partialAmountPending: amountPending,
       partialPaymentDueAt: Date.now() + thirtyDaysMs,
       adminNote: args.adminNote,
+      paymentProofHistory: historyEntry
+        ? [...(order.paymentProofHistory ?? []), historyEntry]
+        : order.paymentProofHistory,
     })
     await ctx.scheduler.runAfter(0, internal.emails.sendPartialPaymentEmail, {
       orderId: args.orderId,
@@ -341,9 +366,26 @@ export const adminRejectPayment = internalMutation({
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId)
     if (!order) return
+    const historyEntry =
+      order.paymentProofStorageId
+        ? {
+            storageId: order.paymentProofStorageId,
+            uploadedAt: order.paymentProofUploadedAt ?? Date.now(),
+            decision: 'rejected' as const,
+            decidedAt: Date.now(),
+            adminNote: args.adminNote,
+          }
+        : null
+    // If partial payment was already received, revert to partial_payment so the
+    // user knows to upload proof for the remaining amount, not start from scratch.
+    const revertStatus: 'pending_payment' | 'partial_payment' =
+      order.partialAmountReceived != null ? 'partial_payment' : 'pending_payment'
     await ctx.db.patch(args.orderId, {
-      status: 'pending_payment',
+      status: revertStatus,
       adminNote: args.adminNote,
+      paymentProofHistory: historyEntry
+        ? [...(order.paymentProofHistory ?? []), historyEntry]
+        : order.paymentProofHistory,
     })
   },
 })
