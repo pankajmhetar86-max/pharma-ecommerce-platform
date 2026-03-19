@@ -121,8 +121,10 @@ export function PaymentPage({ orderId }: { orderId: string }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token: turnstileToken }),
         })
-        const { success } = (await verifyRes.json()) as { success: boolean }
-        if (!success) throw new Error('CAPTCHA verification failed. Please try again.')
+        const text = await verifyRes.text()
+        let verified = false
+        try { verified = (JSON.parse(text) as { success: boolean }).success } catch { /* non-JSON */ }
+        if (!verified) throw new Error('CAPTCHA verification failed. Please try again.')
       }
       const uploadUrl = await generateUploadUrl({ orderId: order._id, turnstileToken })
       const res = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file })

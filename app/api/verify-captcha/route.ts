@@ -7,11 +7,16 @@ export async function POST(req: NextRequest) {
   const secretKey = process.env.TURNSTILE_SECRET_KEY
   if (!secretKey) return NextResponse.json({ success: false, error: 'CAPTCHA not configured' }, { status: 500 })
 
-  const res = await fetch('https://challenges.cloudflare.com/turnstile/v1/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ secret: secretKey, response: token }),
-  })
-  const result = (await res.json()) as { success: boolean }
-  return NextResponse.json({ success: result.success })
+  try {
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v1/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: secretKey, response: token }),
+    })
+    const text = await res.text()
+    const result = JSON.parse(text) as { success: boolean }
+    return NextResponse.json({ success: result.success })
+  } catch {
+    return NextResponse.json({ success: false, error: 'CAPTCHA service unavailable' }, { status: 502 })
+  }
 }
