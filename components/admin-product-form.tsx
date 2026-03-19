@@ -72,17 +72,23 @@ function slugify(name: string): string {
 }
 
 function matrixFromDoc(doc: Doc<'products'>): DosagePricing[] {
-  if (!doc.pricingMatrix) return []
-  return doc.pricingMatrix.map((d) => ({
-    dosage: d.dosage,
-    packages: d.packages.map((p) => ({
-      pillCount: String(p.pillCount),
-      originalPrice: String(p.originalPrice),
-      price: String(p.price),
-      benefits: (p.benefits ?? []).join(', '),
-      expiryDate: p.expiryDate ?? '',
-    })),
-  }))
+  if (doc.pricingMatrix && doc.pricingMatrix.length > 0) {
+    return doc.pricingMatrix.map((d) => ({
+      dosage: d.dosage,
+      packages: d.packages.map((p) => ({
+        pillCount: String(p.pillCount),
+        originalPrice: String(p.originalPrice),
+        price: String(p.price),
+        benefits: (p.benefits ?? []).join(', '),
+        expiryDate: p.expiryDate ?? '',
+      })),
+    }))
+  }
+  // Fall back to dosageOptions (products seeded without pricingMatrix)
+  if (doc.dosageOptions && doc.dosageOptions.length > 0) {
+    return doc.dosageOptions.map((dosage) => ({ dosage, packages: [] }))
+  }
+  return []
 }
 
 export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
@@ -115,7 +121,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const [uploadError, setUploadError] = useState('')
   const [previewSrc, setPreviewSrc] = useState(initial?.image ?? '')
   const [dragOver, setDragOver] = useState(false)
-  const [matrixOpen, setMatrixOpen] = useState(!!(initial?.pricingMatrix && initial.pricingMatrix.length > 0))
+  const [matrixOpen, setMatrixOpen] = useState(true)
   const [newDosageForMatrix, setNewDosageForMatrix] = useState('')
   const [showNewCategory, setShowNewCategory] = useState(false)
   const [newCategoryInput, setNewCategoryInput] = useState('')

@@ -2,29 +2,8 @@
 
 import Link from 'next/link'
 import type { Doc } from '@/convex/_generated/dataModel'
-import { formatPrice } from '@/lib/utils'
-
-function getFromPrice(product: Doc<'products'>): { price: number; perUnit: string } {
-  if (product.pricingMatrix && product.pricingMatrix.length > 0) {
-    let minPerUnit = Infinity
-    for (const dosage of product.pricingMatrix) {
-      for (const pkg of dosage.packages) {
-        if (pkg.pillCount > 0) {
-          const perUnit = pkg.price / pkg.pillCount
-          if (perUnit < minPerUnit) minPerUnit = perUnit
-        }
-      }
-    }
-    if (minPerUnit !== Infinity) {
-      return { price: minPerUnit, perUnit: product.unit }
-    }
-  }
-  const discounted = product.price * (1 - product.discount / 100)
-  return { price: discounted, perUnit: product.unit }
-}
 
 export function ProductCard({ product }: { product: Doc<'products'> }) {
-  const fromPrice = getFromPrice(product)
 
   return (
     <article className="group rx-card flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
@@ -55,10 +34,6 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
               {product.name}
             </h3>
             <p className="mt-0.5 text-xs text-slate-400 truncate">{product.genericName ?? '\u00A0'}</p>
-            <p className="mt-2 text-base font-extrabold text-slate-900">
-              {formatPrice(fromPrice.price)}
-              <span className="ml-1 text-xs font-normal text-slate-400">/ {fromPrice.perUnit}</span>
-            </p>
           </div>
         </Link>
       </div>
