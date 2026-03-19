@@ -104,18 +104,18 @@ const BTC_PRICE_REFRESH_MS = 20 * 60 * 1000 // 20 minutes
 
 async function fetchBtcPriceUsd(): Promise<number> {
   const sources: Array<() => Promise<number>> = [
-    async () => {
-      const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
-      if (!res.ok) throw new Error('Binance failed')
-      const data = (await res.json()) as { price: string }
-      return parseFloat(data.price)
-    },
-    async () => {
-      const res = await fetch('https://api.kraken.com/0/public/Ticker?pair=XBTUSD')
-      if (!res.ok) throw new Error('Kraken failed')
-      const data = (await res.json()) as { result: { XXBTZUSD: { c: [string] } } }
-      return parseFloat(data.result.XXBTZUSD.c[0])
-    },
+    // async () => {
+    //   const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
+    //   if (!res.ok) throw new Error('Binance failed')
+    //   const data = (await res.json()) as { price: string }
+    //   return parseFloat(data.price)
+    // },
+    // async () => {
+    //   const res = await fetch('https://api.kraken.com/0/public/Ticker?pair=XBTUSD')
+    //   if (!res.ok) throw new Error('Kraken failed')
+    //   const data = (await res.json()) as { result: { XXBTZUSD: { c: [string] } } }
+    //   return parseFloat(data.result.XXBTZUSD.c[0])
+    // },
     async () => {
       const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot')
       if (!res.ok) throw new Error('Coinbase failed')
