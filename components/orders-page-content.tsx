@@ -30,7 +30,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700' },
 }
 
-const STATUS_STEPS = ['pending_payment', 'paid', 'processing', 'shipped', 'delivered']
+const STATUS_STEPS = ['pending_payment', 'partial_payment', 'paid', 'processing', 'shipped', 'delivered']
 
 function OrderStatusTracker({ status }: { status: string }) {
   if (status === 'cancelled') {
@@ -44,6 +44,7 @@ function OrderStatusTracker({ status }: { status: string }) {
   const currentIdx = STATUS_STEPS.indexOf(status)
   const labels: Record<string, string> = {
     pending_payment: 'Payment',
+    partial_payment: 'Partial Payment Done',
     paid: 'Paid',
     processing: 'Processing',
     shipped: 'Shipped',
