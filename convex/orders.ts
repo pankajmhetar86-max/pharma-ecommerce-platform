@@ -266,14 +266,12 @@ export const generatePaymentProofUploadUrl = action({
     if (captchaEnabled) {
       const secretKey = process.env.TURNSTILE_SECRET_KEY
       if (!secretKey) throw new Error('CAPTCHA not configured on the server.')
-      const params = new URLSearchParams()
-      params.append('secret', secretKey)
-      params.append('response', args.turnstileToken)
       const res = await fetch('https://challenges.cloudflare.com/turnstile/v1/siteverify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString(),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: secretKey, response: args.turnstileToken }),
       })
+      if (!res.ok) throw new Error(`CAPTCHA service error: ${res.status}`)
       const result = (await res.json()) as { success: boolean }
       if (!result.success) throw new Error('CAPTCHA verification failed. Please try again.')
     }
