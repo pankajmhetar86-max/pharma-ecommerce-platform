@@ -132,6 +132,7 @@ export default defineSchema({
     adminNote: v.optional(v.string()),
     trackingWebsite: v.optional(v.string()),
     trackingNumber: v.optional(v.string()),
+    invoiceUrl: v.optional(v.string()), // legacy: to be removed after migration
     billingAddress: v.optional(billingAddressValidator),
     shippingAddress: v.optional(
       v.union(

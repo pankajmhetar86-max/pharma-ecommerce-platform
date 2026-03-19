@@ -348,6 +348,23 @@ export const adminRejectPayment = internalMutation({
   },
 })
 
+// ── One-time migration: remove legacy invoiceUrl field ────────────────────────
+
+export const removeInvoiceUrlField = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const orders = await ctx.db.query('orders').collect()
+    let count = 0
+    for (const order of orders) {
+      if ('invoiceUrl' in order) {
+        await ctx.db.patch(order._id, { invoiceUrl: undefined })
+        count++
+      }
+    }
+    return { patched: count }
+  },
+})
+
 // ── Auto-cancel helper (called by cron) ───────────────────────────────────────
 
 export const cancelExpiredOrders = internalMutation({
