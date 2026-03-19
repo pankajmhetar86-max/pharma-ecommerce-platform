@@ -218,16 +218,15 @@ function BtcPaymentPanel({
         headers: { 'Content-Type': file.type },
         body: file,
       })
-      if (!res.ok) throw new Error('Upload failed')
+      if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status})`)
       const { storageId } = (await res.json()) as { storageId: string }
       await savePaymentProof({ orderId, storageId: storageId as Id<'_storage'> })
       setProofUploaded(true)
       onProofUploaded()
     } catch (err) {
-      const raw = err instanceof Error ? err.message : ''
-      const knownPhrases = ['wait', 'locked', 'review', 'rejected', 'large', 'not found', 'attempt', 'contact', 'captcha']
-      const isKnown = knownPhrases.some((p) => raw.toLowerCase().includes(p))
-      setUploadError(isKnown ? raw : 'Upload failed. Please try again.')
+      const raw = err instanceof Error ? err.message : String(err)
+      console.error('[BtcPaymentPanel] upload error:', err)
+      setUploadError(raw || 'Upload failed. Please try again.')
       turnstileRef.current?.reset()
       setTurnstileToken(null)
     } finally {
