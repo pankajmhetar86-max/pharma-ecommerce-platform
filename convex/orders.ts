@@ -1,4 +1,4 @@
-import { internalMutation, internalQuery, mutation, query } from './_generated/server'
+import { action, internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 import type { ActionCtx, MutationCtx, QueryCtx } from './_generated/server'
 import { internal } from './_generated/api'
@@ -225,15 +225,60 @@ export const saveBtcPaymentDetails = mutation({
   },
 })
 
-export const generatePaymentProofUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    await getAuthenticatedUserId(ctx)
+const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+const MAX_REJECTIONS = 5
+
+// Returns rejection entries sorted oldest→newest and the cooldown end time (ms) for the current cycle.
+function getUploadGuard(order: { paymentProofHistory?: Array<{ decision: string; decidedAt: number }> }) {
+  const rejections = (order.paymentProofHistory ?? []).filter((h) => h.decision === 'rejected')
+  const locked = rejections.length >= MAX_REJECTIONS
+  const lastRejection = rejections[rejections.length - 1]
+  // Exponential backoff: 5 → 10 → 20 → 40 minutes per rejection cycle
+  const cooldownMs = lastRejection ? Math.pow(2, rejections.length - 1) * 5 * 60 * 1000 : 0
+  const cooldownEndsAt = lastRejection ? lastRejection.decidedAt + cooldownMs : 0
+  const isCoolingDown = cooldownEndsAt > Date.now()
+  return { locked, isCoolingDown, cooldownEndsAt, rejectionCount: rejections.length }
+}
+
+// Internal: order validation + URL generation (called after Turnstile passes)
+export const generateUploadUrlInternal = internalMutation({
+  args: { orderId: v.id('orders') },
+  handler: async (ctx, args) => {
+    const userId = await getAuthenticatedUserId(ctx)
+    const order = await ctx.db.get(args.orderId)
+    if (!order || order.userId !== userId) throw new Error('Order not found')
+    if (order.status === 'payment_review') throw new Error('Your payment proof is already under review.')
+    if (order.status !== 'pending_payment' && order.status !== 'partial_payment') {
+      throw new Error('Upload not allowed for this order.')
+    }
+    const { locked, isCoolingDown, cooldownEndsAt } = getUploadGuard(order)
+    if (locked) throw new Error('Upload locked. Please contact support.')
+    if (isCoolingDown) {
+      const remainingMins = Math.ceil((cooldownEndsAt - Date.now()) / 60000)
+      throw new Error(`Please wait ${remainingMins} more minute(s) before uploading again.`)
+    }
     return ctx.storage.generateUploadUrl()
   },
 })
 
-const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+// Public: verifies Cloudflare Turnstile, then generates the upload URL
+export const generatePaymentProofUploadUrl = action({
+  args: { orderId: v.id('orders'), turnstileToken: v.string() },
+  handler: async (ctx, args): Promise<string> => {
+    const secretKey = process.env.TURNSTILE_SECRET_KEY
+    if (!secretKey) throw new Error('CAPTCHA not configured on the server.')
+    const form = new FormData()
+    form.append('secret', secretKey)
+    form.append('response', args.turnstileToken)
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v1/siteverify', {
+      method: 'POST',
+      body: form,
+    })
+    const result = (await res.json()) as { success: boolean }
+    if (!result.success) throw new Error('CAPTCHA verification failed. Please try again.')
+    return await ctx.runMutation(internal.orders.generateUploadUrlInternal, { orderId: args.orderId })
+  },
+})
 
 export const savePaymentProof = mutation({
   args: {
@@ -245,9 +290,7 @@ export const savePaymentProof = mutation({
 
     // Enforce 5 MB limit server-side — delete the file and reject if oversized
     const metadata = await ctx.storage.getMetadata(args.storageId)
-    if (!metadata) {
-      throw new Error('Uploaded file not found')
-    }
+    if (!metadata) throw new Error('Uploaded file not found')
     if (metadata.size > MAX_PROOF_SIZE_BYTES) {
       await ctx.storage.delete(args.storageId)
       throw new Error('File too large. Maximum size is 5 MB.')
@@ -258,10 +301,31 @@ export const savePaymentProof = mutation({
       await ctx.storage.delete(args.storageId)
       throw new Error('Order not found')
     }
+
+    // One proof per review cycle — block if already awaiting admin review
+    if (order.status === 'payment_review') {
+      await ctx.storage.delete(args.storageId)
+      throw new Error('Your payment proof is already under review. Please wait for admin to respond.')
+    }
     if (order.status === 'paid' || order.status === 'cancelled') {
       await ctx.storage.delete(args.storageId)
-      throw new Error('Cannot upload proof for this order status')
+      throw new Error('Cannot upload proof for this order status.')
     }
+
+    // Abuse guard: exponential backoff + hard lock
+    const { locked, isCoolingDown, cooldownEndsAt, rejectionCount } = getUploadGuard(order)
+    if (locked) {
+      await ctx.storage.delete(args.storageId)
+      throw new Error(`Upload locked after ${MAX_REJECTIONS} rejected submissions. Please contact support.`)
+    }
+    if (isCoolingDown) {
+      await ctx.storage.delete(args.storageId)
+      const remainingMins = Math.ceil((cooldownEndsAt - Date.now()) / 60000)
+      throw new Error(
+        `Too many upload attempts. Please wait ${remainingMins} more minute(s). (Attempt ${rejectionCount}/${MAX_REJECTIONS})`,
+      )
+    }
+
     await ctx.db.patch(args.orderId, {
       paymentProofStorageId: args.storageId,
       paymentProofUploadedAt: Date.now(),

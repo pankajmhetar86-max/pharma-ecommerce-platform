@@ -2,7 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation, useQuery, useAction } from 'convex/react'
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
 import { COUNTRIES } from '@/lib/countries'
@@ -100,6 +101,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const BTC_PRICE_REFRESH_MS = 20 * 60 * 1000 // 20 minutes
 
+
 async function fetchBtcPriceUsd(): Promise<number> {
   const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
   if (!res.ok) throw new Error('Failed to fetch BTC price')
@@ -119,7 +121,7 @@ function BtcPaymentPanel({
   onProofUploaded: () => void
 }) {
   const saveBtcDetails = useMutation(api.orders.saveBtcPaymentDetails)
-  const generateUploadUrl = useMutation(api.orders.generatePaymentProofUploadUrl)
+  const generateUploadUrl = useAction(api.orders.generatePaymentProofUploadUrl)
   const savePaymentProof = useMutation(api.orders.savePaymentProof)
 
   const [btcPrice, setBtcPrice] = useState<number | null>(null)
@@ -132,6 +134,11 @@ function BtcPaymentPanel({
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Turnstile + honeypot
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const turnstileRef = useRef<TurnstileInstance>(null)
+  const [honeypot, setHoneypot] = useState('')
 
   const loadAndSaveBtcPrice = useCallback(async () => {
     try {
@@ -173,7 +180,7 @@ function BtcPaymentPanel({
     setUploadError(null)
     setUploading(true)
     try {
-      const uploadUrl = await generateUploadUrl()
+      const uploadUrl = await generateUploadUrl({ orderId, turnstileToken: turnstileToken! })
       const res = await fetch(uploadUrl, {
         method: 'POST',
         headers: { 'Content-Type': file.type },
@@ -184,8 +191,13 @@ function BtcPaymentPanel({
       await savePaymentProof({ orderId, storageId: storageId as Id<'_storage'> })
       setProofUploaded(true)
       onProofUploaded()
-    } catch {
-      setUploadError('Upload failed. Please try again.')
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : ''
+      const knownPhrases = ['wait', 'locked', 'review', 'rejected', 'large', 'not found', 'attempt', 'contact', 'captcha']
+      const isKnown = knownPhrases.some((p) => raw.toLowerCase().includes(p))
+      setUploadError(isKnown ? raw : 'Upload failed. Please try again.')
+      turnstileRef.current?.reset()
+      setTurnstileToken(null)
     } finally {
       setUploading(false)
     }
@@ -294,6 +306,26 @@ function BtcPaymentPanel({
         <p className="mb-4 text-xs text-slate-500">
           After sending Bitcoin, upload a screenshot of your transaction confirmation.
         </p>
+
+        {/* Honeypot */}
+        <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+          <input type="text" name="company" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} tabIndex={-1} autoComplete="off" />
+        </div>
+
+        {/* Cloudflare Turnstile */}
+        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+          <div className="mb-3">
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+              onSuccess={(token: string) => setTurnstileToken(token)}
+              onError={() => setTurnstileToken(null)}
+              onExpire={() => setTurnstileToken(null)}
+              options={{ theme: 'light', size: 'normal' }}
+            />
+          </div>
+        )}
+
         <input
           ref={fileInputRef}
           type="file"
@@ -301,12 +333,15 @@ function BtcPaymentPanel({
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0]
-            if (file) handleFileUpload(file)
+            if (file) {
+              if (honeypot) { onProofUploaded(); return }
+              void handleFileUpload(file)
+            }
           }}
         />
         <button
           type="button"
-          disabled={uploading || !btcAmount}
+          disabled={uploading || !btcAmount || !turnstileToken}
           onClick={() => fileInputRef.current?.click()}
           className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 py-4 text-sm font-semibold text-slate-600 hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -324,6 +359,9 @@ function BtcPaymentPanel({
             </>
           )}
         </button>
+        {!turnstileToken && !uploading && (
+          <p className="mt-2 text-xs text-slate-400">Complete the verification above to enable upload.</p>
+        )}
         {uploadError && <p className="mt-2 text-xs text-red-600">{uploadError}</p>}
         <p className="mt-3 text-xs text-slate-400">
           You can also upload proof later from your{' '}
@@ -696,7 +734,7 @@ export function CheckoutPageContent() {
         <h2 className="text-lg font-bold text-slate-900">Order Summary</h2>
         <ul className="mt-4 space-y-2">
           {cart?.items.map((item) => (
-            <li key={item.productId} className="flex items-center justify-between text-sm">
+            <li key={`${item.productId}-${item.dosage ?? ''}-${item.pillCount ?? ''}`} className="flex items-center justify-between text-sm">
               <span className="text-slate-600">
                 {item.name} × {item.quantity}
               </span>
