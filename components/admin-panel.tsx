@@ -485,9 +485,16 @@ function OrdersTab() {
   const [reviewPartialAmount, setReviewPartialAmount] = useState('')
   const [reviewNote, setReviewNote] = useState('')
   const [reviewLoading, setReviewLoading] = useState(false)
+  const [orderSearch, setOrderSearch] = useState('')
   // Derive viewing order from the live reactive query so the modal always reflects
   // the latest DB state without needing manual state sync after mutations.
   const viewingOrder = orders?.find((o) => o._id === viewingOrderId) ?? null
+
+  const filteredOrders = orders?.filter((o) => {
+    if (!orderSearch.trim()) return true
+    const q = orderSearch.trim().toLowerCase().replace(/^#/, '')
+    return o._id.toLowerCase().includes(q) || o._id.slice(-8).toLowerCase().includes(q)
+  })
 
   const handleStatusChange = async (id: Doc<'orders'>['_id'], status: Doc<'orders'>['status']) => {
     setUpdatingId(id)
@@ -557,9 +564,21 @@ function OrdersTab() {
 
   return (
     <>
-      <div className="mb-4">
-        <h2 className="text-lg font-bold text-slate-900">All Orders</h2>
-        <p className="text-sm text-slate-500">View and manage customer orders. Click an order to see full details.</p>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">All Orders</h2>
+          <p className="text-sm text-slate-500">View and manage customer orders. Click an order to see full details.</p>
+        </div>
+        <div className="relative w-64 shrink-0">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search by order ID…"
+            value={orderSearch}
+            onChange={(e) => setOrderSearch(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+          />
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -567,8 +586,10 @@ function OrdersTab() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
           </div>
-        ) : orders.length === 0 ? (
-          <div className="py-20 text-center text-slate-400">No orders yet.</div>
+        ) : filteredOrders!.length === 0 ? (
+          <div className="py-20 text-center text-slate-400">
+            {orderSearch.trim() ? 'No orders match your search.' : 'No orders yet.'}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -584,7 +605,7 @@ function OrdersTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {orders.map((order) => {
+                {filteredOrders!.map((order) => {
                   const sd = getStatusDisplay(order.status)
                   return (
                     <tr key={order._id} className="hover:bg-slate-50">
