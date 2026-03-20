@@ -106,17 +106,6 @@ export function PaymentPage({ orderId }: { orderId: string }) {
     setUploadError(null)
     setUploading(true)
     try {
-      if (captchaEnabled && turnstileToken !== 'bypass') {
-        const verifyRes = await fetch('/api/verify-captcha', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: turnstileToken }),
-        })
-        const text = await verifyRes.text()
-        let verified = false
-        try { verified = (JSON.parse(text) as { success: boolean }).success } catch { /* non-JSON */ }
-        if (!verified) throw new Error('CAPTCHA verification failed. Please try again.')
-      }
       const uploadUrl = await generateUploadUrl({ orderId: order._id, turnstileToken })
       const res = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file })
       if (!res.ok) throw new Error('Upload failed')
