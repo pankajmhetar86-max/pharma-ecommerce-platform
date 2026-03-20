@@ -271,7 +271,7 @@ export const saveBtcPaymentDetails = action({
   args: {
     orderId: v.id('orders'),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ btcAmountDue: number; btcPriceUsd: number; btcPriceUpdatedAt: number }> => {
     const userId = await getAuthenticatedUserId(ctx)
     const order = await ctx.runQuery(internal.orders.getOrderById, { orderId: args.orderId })
     if (!order || order.userId !== userId) {
@@ -345,12 +345,10 @@ export const setBtcPaymentQuoteInternal = internalMutation({
     btcAmountDue: v.number(),
     btcPriceUsd: v.number(),
   },
+  // Called only from saveBtcPaymentDetails action which already verified auth + ownership.
   handler: async (ctx, args) => {
-    const userId = await getAuthenticatedUserId(ctx)
     const order = await ctx.db.get(args.orderId)
-    if (!order || order.userId !== userId) {
-      throw new Error('Order not found')
-    }
+    if (!order) throw new Error('Order not found')
     await ctx.db.patch(args.orderId, {
       btcAmountDue: args.btcAmountDue,
       btcPriceUsd: args.btcPriceUsd,
