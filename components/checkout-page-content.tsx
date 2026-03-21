@@ -394,6 +394,11 @@ export function CheckoutPageContent() {
   const [orderTotal, setOrderTotal] = useState(0)
   const [proofSubmitted, setProofSubmitted] = useState(false)
 
+  // Checkout-form CAPTCHA
+  const [checkoutTurnstileToken, setCheckoutTurnstileToken] = useState<string | null>(null)
+  const checkoutTurnstileRef = useRef<TurnstileInstance>(null)
+  const [checkoutHoneypot, setCheckoutHoneypot] = useState('')
+
   const setBillingField = <K extends keyof BillingForm>(key: K, value: BillingForm[K]) =>
     setBilling((prev) => {
       const next = { ...prev, [key]: value }
@@ -463,6 +468,7 @@ export function CheckoutPageContent() {
   const handleCheckoutSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setErrorMessage(null)
+    if (checkoutHoneypot) return
     if (!cart || cart.items.length === 0) {
       setErrorMessage('Your cart is empty.')
       return
@@ -476,6 +482,10 @@ export function CheckoutPageContent() {
       setErrorMessage('Bitcoin payment is not configured. Please contact support.')
       return
     }
+    if (!checkoutTurnstileToken) {
+      setErrorMessage('Please complete the CAPTCHA verification.')
+      return
+    }
     try {
       setIsSubmitting(true)
       const { orderId: newOrderId, total } = await createBtcOrder({
@@ -486,6 +496,8 @@ export function CheckoutPageContent() {
       setOrderTotal(total)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to create order.')
+      checkoutTurnstileRef.current?.reset()
+      setCheckoutTurnstileToken(null)
       setIsSubmitting(false)
     }
   }
@@ -723,9 +735,28 @@ export function CheckoutPageContent() {
           <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{errorMessage}</p>
         )}
 
+        {/* Honeypot */}
+        <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+          <input type="text" name="website" value={checkoutHoneypot} onChange={(e) => setCheckoutHoneypot(e.target.value)} tabIndex={-1} autoComplete="off" />
+        </div>
+
+        {/* Cloudflare Turnstile */}
+        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+          <div className="mb-4">
+            <Turnstile
+              ref={checkoutTurnstileRef}
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+              onSuccess={(token: string) => setCheckoutTurnstileToken(token)}
+              onError={() => setCheckoutTurnstileToken(null)}
+              onExpire={() => { setCheckoutTurnstileToken(null); setErrorMessage('Verification expired. Please complete the CAPTCHA again.') }}
+              options={{ theme: 'light', size: 'normal' }}
+            />
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={isSubmitting || cartEmpty || !btcAddress}
+          disabled={isSubmitting || cartEmpty || !btcAddress || !checkoutTurnstileToken}
           className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? 'Creating order...' : 'Place Order & Pay with Bitcoin'}
