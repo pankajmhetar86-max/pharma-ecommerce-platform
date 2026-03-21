@@ -126,6 +126,8 @@ export default defineSchema({
     btcPriceUpdatedAt: v.optional(v.number()),
     paymentProofStorageId: v.optional(v.id('_storage')),
     paymentProofUploadedAt: v.optional(v.number()),
+    lastUploadUrlGeneratedAt: v.optional(v.number()),
+    totalProofUploads: v.optional(v.number()),
     partialAmountReceived: v.optional(v.number()),
     partialAmountPending: v.optional(v.number()),
     partialPaymentDueAt: v.optional(v.number()),

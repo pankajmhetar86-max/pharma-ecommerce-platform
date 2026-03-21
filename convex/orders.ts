@@ -286,6 +286,8 @@ export const saveBtcPaymentDetails = action({
 
 const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 const MAX_REJECTIONS = 5
+const MAX_TOTAL_PROOF_UPLOADS = 10 // lifetime cap per order
+const UPLOAD_URL_COOLDOWN_MS = 2 * 60 * 1000 // 2 minutes between URL generations
 
 // Returns rejection entries sorted oldest→newest and the cooldown end time (ms) for the current cycle.
 function getUploadGuard(order: { paymentProofHistory?: Array<{ decision: string; decidedAt: number }> }) {
@@ -310,12 +312,30 @@ export const generateUploadUrlInternal = internalMutation({
     if (order.status !== 'pending_payment' && order.status !== 'partial_payment') {
       throw new Error('Upload not allowed for this order.')
     }
+
+    // Lifetime cap on total proof uploads per order
+    if ((order.totalProofUploads ?? 0) >= MAX_TOTAL_PROOF_UPLOADS) {
+      throw new Error('Maximum upload limit reached for this order. Please contact support.')
+    }
+
+    // Cooldown between URL generations to prevent rapid-fire requests
+    const lastGen = order.lastUploadUrlGeneratedAt ?? 0
+    const sinceLast = Date.now() - lastGen
+    if (sinceLast < UPLOAD_URL_COOLDOWN_MS) {
+      const waitSecs = Math.ceil((UPLOAD_URL_COOLDOWN_MS - sinceLast) / 1000)
+      throw new Error(`Please wait ${waitSecs} seconds before requesting another upload.`)
+    }
+
     const { locked, isCoolingDown, cooldownEndsAt } = getUploadGuard(order)
     if (locked) throw new Error('Upload locked. Please contact support.')
     if (isCoolingDown) {
       const remainingMins = Math.ceil((cooldownEndsAt - Date.now()) / 60000)
       throw new Error(`Please wait ${remainingMins} more minute(s) before uploading again.`)
     }
+
+    // Record URL generation timestamp
+    await ctx.db.patch(args.orderId, { lastUploadUrlGeneratedAt: Date.now() })
+
     return ctx.storage.generateUploadUrl()
   },
 })
@@ -428,10 +448,16 @@ export const savePaymentProof = mutation({
       )
     }
 
+    // Delete the previous proof file from storage to prevent orphaned files
+    if (order.paymentProofStorageId) {
+      await ctx.storage.delete(order.paymentProofStorageId)
+    }
+
     await ctx.db.patch(args.orderId, {
       paymentProofStorageId: args.storageId,
       paymentProofUploadedAt: Date.now(),
       status: 'payment_review',
+      totalProofUploads: (order.totalProofUploads ?? 0) + 1,
     })
 
     // Clear the cart now that payment proof is submitted
