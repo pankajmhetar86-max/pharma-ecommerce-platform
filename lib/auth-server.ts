@@ -177,7 +177,7 @@ export const isAuthenticated: AuthBridge['isAuthenticated'] = async () => {
 }
 
 export async function isAdminAuthenticated() {
-  const token = await getToken()
+  const token = (await getToken()) ?? (await getConvexJwtFromCookies())
   if (!token || !convexUrl) {
     return false
   }
