@@ -173,7 +173,16 @@ function BtcPaymentPanel({
     setUploadError(null)
     setUploading(true)
     try {
-      const uploadUrl = await generateUploadUrl({ orderId, turnstileToken: turnstileToken! })
+      if (captchaEnabled && turnstileToken && turnstileToken !== 'bypass') {
+        const verifyRes = await fetch('/api/verify-captcha', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: turnstileToken }),
+        })
+        const { success } = (await verifyRes.json()) as { success: boolean }
+        if (!success) throw new Error('CAPTCHA verification failed. Please try again.')
+      }
+      const uploadUrl = await generateUploadUrl({ orderId })
       const res = await fetch(uploadUrl, {
         method: 'POST',
         headers: { 'Content-Type': file.type },

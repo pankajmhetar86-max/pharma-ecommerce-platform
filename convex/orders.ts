@@ -124,35 +124,6 @@ function assertIndiaOnlyDelivery(args: {
   }
 }
 
-async function verifyTurnstileToken(token: string): Promise<boolean> {
-  // Respect the kill-switch (CAPTCHA_ENABLED=false in Convex env disables server-side check)
-  if (process.env.CAPTCHA_ENABLED === 'false' || process.env.NEXT_PUBLIC_CAPTCHA_ENABLED === 'false') {
-    return true
-  }
-  // Route verification through the Next.js API route because Cloudflare blocks
-  // siteverify requests from Convex's infrastructure IPs directly (HTTP 405).
-  const siteUrl = process.env.SITE_URL
-  if (!siteUrl) throw new Error('SITE_URL not configured. Please contact support.')
-  try {
-    const res = await fetch(`${siteUrl}/api/verify-captcha`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    })
-    if (!res.ok) {
-      console.error('[turnstile] verify-captcha HTTP error', res.status)
-      return false
-    }
-    const data = (await res.json().catch(() => null)) as { success?: boolean; errorCodes?: string[]; httpStatus?: number } | null
-    if (!data?.success) {
-      console.error('[turnstile] verification failed', { errorCodes: data?.errorCodes, httpStatus: data?.httpStatus })
-    }
-    return Boolean(data?.success)
-  } catch (err) {
-    console.error('[turnstile] fetch error', err)
-    return false
-  }
-}
 
 async function fetchJsonWithTimeout<T>(url: string, timeoutMs = 6000): Promise<T> {
   const controller = new AbortController()
@@ -367,12 +338,11 @@ export const setBtcPaymentQuoteInternal = internalMutation({
   },
 })
 
-// Public: generates the upload URL (Cloudflare Turnstile is verified server-side)
+// Public: generates the upload URL — CAPTCHA verified client-side, auth verified here.
 export const generatePaymentProofUploadUrl = action({
-  args: { orderId: v.id('orders'), turnstileToken: v.string() },
+  args: { orderId: v.id('orders') },
   handler: async (ctx, args): Promise<string> => {
-    const verified = await verifyTurnstileToken(args.turnstileToken)
-    if (!verified) throw new Error('CAPTCHA verification failed. Please try again.')
+    await getAuthenticatedUserId(ctx)
     return await ctx.runMutation(internal.orders.generateUploadUrlInternal, { orderId: args.orderId })
   },
 })
