@@ -219,6 +219,8 @@ export const getBtcWalletAddress = query({
   },
 })
 
+const MAX_PENDING_ORDERS_PER_USER = 3
+
 export const createBtcOrder = mutation({
   args: {
     billingAddress: billingAddressArg,
@@ -227,6 +229,21 @@ export const createBtcOrder = mutation({
   handler: async (ctx, args) => {
     assertIndiaOnlyDelivery(args)
     const userId = await getAuthenticatedUserId(ctx)
+
+    // Prevent order flooding: limit unpaid orders per user
+    const existingOrders = await ctx.db
+      .query('orders')
+      .withIndex('by_user_id_and_created_at', (q) => q.eq('userId', userId))
+      .collect()
+    const pendingCount = existingOrders.filter(
+      (o) => o.status === 'pending_payment' || o.status === 'partial_payment' || o.status === 'payment_review',
+    ).length
+    if (pendingCount >= MAX_PENDING_ORDERS_PER_USER) {
+      throw new Error(
+        `You already have ${pendingCount} unpaid order(s). Please complete or cancel existing orders before placing a new one.`,
+      )
+    }
+
     const { cart, orderItems } = await buildOrderItemsFromCart(ctx, userId)
     const total = Number(orderItems.reduce((sum, item) => sum + item.lineTotal, 0).toFixed(2))
 
