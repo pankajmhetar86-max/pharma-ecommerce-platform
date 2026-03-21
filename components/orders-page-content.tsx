@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useQuery } from 'convex/react'
+import { useQuery, useMutation } from 'convex/react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
 import type { Doc } from '@/convex/_generated/dataModel'
@@ -184,6 +184,57 @@ function PaymentRejectedBanner({ order }: { order: Doc<'orders'> }) {
   )
 }
 
+// ── Cancel Order Button ────────────────────────────────────────────────────────
+
+function CancelOrderButton({ order }: { order: Doc<'orders'> }) {
+  const cancellableStatuses = ['pending_payment', 'payment_review']
+  if (!cancellableStatuses.includes(order.status)) return null
+
+  const [confirming, setConfirming] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const cancelOrder = useMutation(api.orders.cancelOrder)
+
+  async function handleCancel() {
+    setLoading(true)
+    try {
+      await cancelOrder({ orderId: order._id })
+    } finally {
+      setLoading(false)
+      setConfirming(false)
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      {confirming ? (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Cancel this order?</span>
+          <button
+            onClick={handleCancel}
+            disabled={loading}
+            className="rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+          >
+            {loading ? 'Cancelling…' : 'Yes, cancel'}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Keep
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setConfirming(true)}
+          className="text-xs font-semibold text-red-500 hover:underline"
+        >
+          Cancel order
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export function OrdersPageContent() {
@@ -260,6 +311,9 @@ export function OrdersPageContent() {
 
                   {/* Payment rejected banner */}
                   <PaymentRejectedBanner order={order} />
+
+                  {/* Cancel order */}
+                  <CancelOrderButton order={order} />
 
                   {/* Items */}
                   <ul className="mt-5 divide-y divide-slate-100">

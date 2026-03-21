@@ -219,7 +219,7 @@ export const getBtcWalletAddress = query({
   },
 })
 
-const MAX_PENDING_ORDERS_PER_USER = 3
+const MAX_PENDING_ORDERS_PER_USER = 50
 
 export const createBtcOrder = mutation({
   args: {
@@ -628,6 +628,24 @@ export const removeInvoiceUrlField = internalMutation({
       }
     }
     return { patched: count }
+  },
+})
+
+// ── User Cancel Order ──────────────────────────────────────────────────────────
+
+export const cancelOrder = mutation({
+  args: { orderId: v.id('orders') },
+  handler: async (ctx, args) => {
+    const userId = await getAuthenticatedUserId(ctx)
+    const order = await ctx.db.get(args.orderId)
+    if (!order || order.userId !== userId) {
+      throw new ConvexError('Order not found.')
+    }
+    const cancellableStatuses = ['pending_payment', 'payment_review']
+    if (!cancellableStatuses.includes(order.status)) {
+      throw new ConvexError('This order cannot be cancelled.')
+    }
+    await ctx.db.patch(args.orderId, { status: 'cancelled' })
   },
 })
 
