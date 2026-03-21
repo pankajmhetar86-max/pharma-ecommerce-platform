@@ -124,24 +124,45 @@ function assertIndiaOnlyDelivery(args: {
   }
 }
 
-function getAppUrlFromEnv() {
-  const raw = (process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? '').trim()
-  if (!raw) {
-    throw new Error('Missing SITE_URL or NEXT_PUBLIC_APP_URL in Convex environment')
+async function verifyTurnstileToken(token: string): Promise<boolean> {
+  // Respect the kill-switch (CAPTCHA_ENABLED=false in Convex env disables server-side check)
+  if (process.env.CAPTCHA_ENABLED === 'false' || process.env.NEXT_PUBLIC_CAPTCHA_ENABLED === 'false') {
+    return true
   }
-  return raw.replace(/\/+$/, '')
-}
-
-async function verifyTurnstileTokenViaApi(token: string): Promise<boolean> {
-  const appUrl = getAppUrlFromEnv()
-  const res = await fetch(`${appUrl}/api/verify-captcha`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token }),
-  })
-  if (!res.ok) return false
-  const data = (await res.json().catch(() => null)) as { success?: boolean } | null
-  return Boolean(data?.success)
+  const secretKey = process.env.TURNSTILE_SECRET_KEY
+  if (!secretKey) throw new Error('CAPTCHA secret key not configured. Please contact support.')
+  try {
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v1/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ secret: secretKey, response: token }),
+    })
+    if (!res.ok) {
+      console.error('[turnstile] siteverify HTTP error', res.status)
+      return false
+    }
+    const ERROR_MESSAGES: Record<string, string> = {
+      'missing-input-secret': 'Secret key was not provided',
+      'invalid-input-secret': 'Secret key is invalid or does not match the site key',
+      'missing-input-response': 'Turnstile token was not submitted',
+      'invalid-input-response': 'Turnstile token is invalid or malformed',
+      'invalid-widget-id': 'Widget ID in the token does not match the site key',
+      'invalid-parsed-secret': 'Secret key could not be parsed',
+      'bad-request': 'Request to Cloudflare was malformed',
+      'timeout-or-duplicate': 'Token has already been used or has expired (max 300s)',
+      'internal-error': 'Cloudflare internal error — try again',
+    }
+    const data = (await res.json().catch(() => null)) as { success?: boolean; 'error-codes'?: string[] } | null
+    if (!data?.success) {
+      const codes = data?.['error-codes'] ?? []
+      const messages = codes.map((c) => `${c}: ${ERROR_MESSAGES[c] ?? 'unknown error'}`)
+      console.error('[turnstile] verification failed', { codes, messages })
+    }
+    return Boolean(data?.success)
+  } catch (err) {
+    console.error('[turnstile] fetch error', err)
+    return false
+  }
 }
 
 async function fetchJsonWithTimeout<T>(url: string, timeoutMs = 6000): Promise<T> {
@@ -361,7 +382,7 @@ export const setBtcPaymentQuoteInternal = internalMutation({
 export const generatePaymentProofUploadUrl = action({
   args: { orderId: v.id('orders'), turnstileToken: v.string() },
   handler: async (ctx, args): Promise<string> => {
-    const verified = await verifyTurnstileTokenViaApi(args.turnstileToken)
+    const verified = await verifyTurnstileToken(args.turnstileToken)
     if (!verified) throw new Error('CAPTCHA verification failed. Please try again.')
     return await ctx.runMutation(internal.orders.generateUploadUrlInternal, { orderId: args.orderId })
   },
