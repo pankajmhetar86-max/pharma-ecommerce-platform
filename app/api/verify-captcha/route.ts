@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, bypassed: true })
   }
 
-  const secretKey = process.env.TURNSTILE_SECRET_KEY
+  const secretKey = process.env.TURNSTILE_SECRET_KEY?.trim()
   if (!secretKey) return NextResponse.json({ success: false, error: 'CAPTCHA not configured' }, { status: 500 })
 
   try {
@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ secret: secretKey, response: token }),
     })
-    const result = (await res.json().catch(() => null)) as { success?: boolean; ['error-codes']?: string[] } | null
+    const rawText = await res.text()
+    console.log('[verify-captcha] raw response', { status: res.status, body: rawText })
+    let result: { success?: boolean; ['error-codes']?: string[] } | null = null
+    try { result = JSON.parse(rawText) } catch { /* non-JSON */ }
     const success = Boolean(res.ok && result?.success)
     if (!success) {
       console.warn('[verify-captcha] Turnstile verification failed.', { status: res.status, errorCodes: result?.['error-codes'] })
