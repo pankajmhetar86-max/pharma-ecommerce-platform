@@ -699,8 +699,8 @@ export function CheckoutPageContent() {
                 <Field label="Country:">
                   <div className="relative">
                     <select className={selectClass} value={shipping.country} onChange={(e) => setShippingField('country', e.target.value)}>
-                      {DELIVERY_COUNTRIES.map((c) => (
-                        <option key={c.code} value={c.code}>{c.name}</option>
+                      {DELIVERY_COUNTRIES.map((name) => (
+                        <option key={name} value={name}>{name}</option>
                       ))}
                     </select>
                     <span className="pointer-events-none absolute right-3 top-2.5 text-slate-400">▾</span>
