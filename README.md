@@ -2,7 +2,6 @@
 
 ## Footer pages
 
-
 `app/(shop)/.../page.tsx` - visit these respective pages to update
 
 ## Product Description Markdown
