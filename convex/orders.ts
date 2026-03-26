@@ -14,12 +14,6 @@ const getAuthenticatedUserId = async (ctx: AuthenticatedCtx) => {
   return identity.subject
 }
 
-function isIndiaCountry(country: string | undefined) {
-  if (!country) return false
-  const normalizedCountry = country.trim().toLowerCase()
-  return normalizedCountry === 'india' || normalizedCountry === 'in'
-}
-
 const buildOrderItemsFromCart = async (ctx: MutationCtx, userId: string) => {
   const cart = await ctx.db
     .query('carts')
@@ -108,21 +102,6 @@ const shippingAddressArg = v.optional(
     }),
   ),
 )
-
-function assertIndiaOnlyDelivery(args: {
-  billingAddress?: { country: string } | undefined
-  shippingAddress?: { sameAsBilling: true } | { sameAsBilling: false; country: string } | undefined
-}) {
-  const billingCountry = args.billingAddress?.country
-  if (billingCountry && !isIndiaCountry(billingCountry)) {
-    throw new Error('Delivery is currently available only within India.')
-  }
-
-  const shipping = args.shippingAddress
-  if (shipping && shipping.sameAsBilling === false && !isIndiaCountry(shipping.country)) {
-    throw new Error('Delivery is currently available only within India.')
-  }
-}
 
 async function fetchJsonWithTimeout<T>(url: string, timeoutMs = 6000): Promise<T> {
   const controller = new AbortController()
@@ -228,7 +207,6 @@ export const createBtcOrder = mutation({
     shippingAddress: shippingAddressArg,
   },
   handler: async (ctx, args) => {
-    assertIndiaOnlyDelivery(args)
     const userId = await getAuthenticatedUserId(ctx)
 
     // Prevent order flooding: limit unpaid orders per user

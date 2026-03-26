@@ -66,7 +66,7 @@ const EMPTY_BILLING: BillingForm = {
   lastName: '',
   streetAddress: '',
   city: '',
-  country: 'India',
+  country: '',
   state: '',
   zipCode: '',
 }
@@ -76,7 +76,7 @@ const EMPTY_SHIPPING: ShippingForm = {
   lastName: '',
   streetAddress: '',
   city: '',
-  country: 'India',
+  country: '',
   state: '',
   zipCode: '',
 }
