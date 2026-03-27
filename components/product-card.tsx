@@ -3,6 +3,12 @@
 import Link from 'next/link'
 import type { Doc } from '@/convex/_generated/dataModel'
 
+function productUrl(product: Doc<'products'>, suffix = '') {
+  const categoryPath = product.category.replace(/ /g, '+')
+  const id = product.slug ?? product._id
+  return `/category/${categoryPath}/${id}${suffix}`
+}
+
 export function ProductCard({ product }: { product: Doc<'products'> }) {
   return (
     <article className="group rx-card flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
@@ -14,7 +20,7 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
           </span>
         )}
 
-        <Link href={`/${product.slug ?? product._id}`} className="block">
+        <Link href={productUrl(product)} className="block">
           {/* Image area — fixed height so all cards align */}
           <div className="flex h-36 items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
             <img
@@ -44,7 +50,7 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
             {product.pricingMatrix.map((entry) => (
               <Link
                 key={entry.dosage}
-                href={`/${product.slug ?? product._id}?dosage=${encodeURIComponent(entry.dosage)}`}
+                href={productUrl(product, `?dosage=${encodeURIComponent(entry.dosage)}`)}
                 className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
               >
                 {entry.dosage}
@@ -56,7 +62,7 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
 
       {/* CTA — always at the bottom */}
       <Link
-        href={`/${product.slug ?? product._id}`}
+        href={productUrl(product)}
         className="flex w-full items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 py-2.5 text-sm font-semibold text-white transition-all hover:from-teal-500 hover:to-cyan-500"
       >
         View Item

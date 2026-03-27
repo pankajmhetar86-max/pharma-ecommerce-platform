@@ -1,6 +1,6 @@
 'use client'
 
-import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { CATEGORY_LIST } from '@/lib/category-list'
@@ -10,39 +10,24 @@ import { ProductGrid } from './product-grid'
 import type { Route } from 'next'
 
 export function HomePageContent() {
-  const searchParams = useSearchParams()
   const router = useRouter()
-  const pathname = usePathname()
-  const selectedCategory = searchParams.get('category') ?? undefined
 
   const fetchedCategories = useQuery(api.categories.list)
   const recommendedProducts = useQuery(api.products.listRecommended)
-  const categoryProducts = useQuery(
-    api.products.list,
-    selectedCategory ? { category: selectedCategory, limit: 24 } : 'skip',
-  )
-
-  const products = selectedCategory ? categoryProducts : recommendedProducts
 
   const categories =
     fetchedCategories?.map((category) => ({ _id: category._id, name: category.name })) ??
     CATEGORY_LIST.map((name) => ({ name }))
 
-  const heading = selectedCategory ?? 'Recommended'
+  const heading = 'Recommended'
   const emptyMessage =
-    !selectedCategory && recommendedProducts?.length === 0
+    recommendedProducts?.length === 0
       ? 'No recommended products yet. Ask your admin to mark some products as recommended.'
       : undefined
 
   const handleSelectCategory = (cat: string) => {
-    const params = new URLSearchParams(searchParams.toString())
-    if (cat === selectedCategory) {
-      params.delete('category')
-    } else {
-      params.set('category', cat)
-    }
-    const query = params.toString()
-    router.push((query ? `${pathname}?${query}` : pathname) as Route)
+    const categoryPath = cat.replace(/ /g, '+')
+    router.push(`/category/${categoryPath}` as Route)
   }
 
   return (
@@ -50,7 +35,7 @@ export function HomePageContent() {
       <div className="order-2 lg:order-1">
         <CategorySidebar
           categories={categories}
-          selectedCategory={selectedCategory}
+          selectedCategory={undefined}
           onSelectCategory={handleSelectCategory}
         />
       </div>
@@ -61,7 +46,7 @@ export function HomePageContent() {
           {emptyMessage ? (
             <p className="py-12 text-center text-slate-400">{emptyMessage}</p>
           ) : (
-            <ProductGrid products={products} />
+            <ProductGrid products={recommendedProducts} />
           )}
         </section>
       </div>

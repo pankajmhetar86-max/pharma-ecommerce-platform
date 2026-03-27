@@ -3,18 +3,17 @@
 import { useMemo } from 'react'
 import { useQuery } from 'convex/react'
 import type { Route } from 'next'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
 import { CATEGORY_LIST } from '@/lib/category-list'
 import { CategorySidebar } from './category-sidebar'
 import { ProductGrid } from './product-grid'
 
-export function ProductsPageContent() {
+export function ProductsPageContent({ categoryFromPath }: { categoryFromPath?: string } = {}) {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const selectedCategory = searchParams.get('category') ?? ''
+  const selectedCategory = categoryFromPath ?? searchParams.get('category') ?? ''
   const searchTerm = searchParams.get('q') ?? ''
 
   const fetchedCategories = useQuery(api.categories.list)
@@ -29,14 +28,12 @@ export function ProductsPageContent() {
     CATEGORY_LIST.map((name) => ({ name }))
 
   const updateCategory = (nextCategory: string) => {
-    const params = new URLSearchParams(searchParams.toString())
     if (nextCategory) {
-      params.set('category', nextCategory)
+      const categoryPath = nextCategory.replace(/ /g, '+')
+      router.push(`/category/${categoryPath}` as Route)
     } else {
-      params.delete('category')
+      router.push('/products' as Route)
     }
-    const query = params.toString()
-    router.push((query ? `${pathname}?${query}` : pathname) as Route)
   }
 
   const headingText = useMemo(() => {
