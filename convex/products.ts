@@ -57,6 +57,16 @@ export const list = query({
   },
 })
 
+export const listForSitemap = query({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db.query('products').collect()
+    return products
+      .filter((p) => p.isVisible !== false && p.slug)
+      .map((p) => ({ slug: p.slug as string, category: p.category }))
+  },
+})
+
 export const listRecommended = query({
   args: {},
   handler: async (ctx) => {
