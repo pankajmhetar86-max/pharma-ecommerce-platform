@@ -1,5 +1,6 @@
 import { convexBetterAuthNextJs } from '@convex-dev/better-auth/nextjs'
 import { ConvexHttpClient } from 'convex/browser'
+import { createHmac } from 'crypto'
 import { cookies, headers } from 'next/headers'
 import { api } from '@/convex/_generated/api'
 
@@ -50,6 +51,19 @@ function getRequestOrigin(request: Request) {
   }
 
   return process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin
+}
+
+const CAPTCHA_MAX_AGE_MS = 5 * 60 * 1000 // 5 minutes
+
+function verifyCaptchaProof(proof: string, timestampStr: string): boolean {
+  const secretKey = process.env.TURNSTILE_SECRET_KEY?.trim()
+  if (!secretKey) return false
+  const timestamp = parseInt(timestampStr, 10)
+  if (isNaN(timestamp)) return false
+  const age = Date.now() - timestamp
+  if (age < 0 || age > CAPTCHA_MAX_AGE_MS) return false
+  const expected = createHmac('sha256', secretKey).update(timestampStr).digest('hex')
+  return proof === expected
 }
 
 function isSameOriginPost(request: Request) {
@@ -161,6 +175,15 @@ export const handler: AuthBridge['handler'] = {
     // CSRF defense: require same-origin POSTs for auth endpoints that set cookies / mutate auth state.
     if (!isSameOriginPost(request)) {
       return new Response('Forbidden', { status: 403 })
+    }
+    // CAPTCHA enforcement for sign-in and sign-up endpoints.
+    const url = new URL(request.url)
+    if (url.pathname.includes('/sign-in/email') || url.pathname.includes('/sign-up/email')) {
+      const proof = request.headers.get('x-captcha-proof')
+      const timestamp = request.headers.get('x-captcha-timestamp')
+      if (!proof || !timestamp || !verifyCaptchaProof(proof, timestamp)) {
+        return new Response('CAPTCHA verification required.', { status: 403 })
+      }
     }
     try {
       return await bridge.handler.POST(request)
