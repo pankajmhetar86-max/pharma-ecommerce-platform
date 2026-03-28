@@ -4,7 +4,7 @@ import { ProductsPageContent } from '@/components/products-page-content'
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
   const { category } = await params
-  const categoryName = category.replace(/\+/g, ' ')
+  const categoryName = decodeURIComponent(category).replace(/\+/g, ' ')
   return {
     title: `${categoryName} Products`,
     description: `Browse ${categoryName} products`,
@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
 
 export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params
-  const categoryName = category.replace(/\+/g, ' ')
+  const categoryName = decodeURIComponent(category).replace(/\+/g, ' ')
   return (
     <Suspense
       fallback={
