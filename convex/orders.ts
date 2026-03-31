@@ -14,12 +14,6 @@ const getAuthenticatedUserId = async (ctx: AuthenticatedCtx) => {
   return identity.subject
 }
 
-function isIndiaCountry(country: string | undefined) {
-  if (!country) return false
-  const normalizedCountry = country.trim().toLowerCase()
-  return normalizedCountry === 'india' || normalizedCountry === 'in'
-}
-
 const buildOrderItemsFromCart = async (ctx: MutationCtx, userId: string) => {
   const cart = await ctx.db
     .query('carts')
@@ -109,22 +103,6 @@ const shippingAddressArg = v.optional(
   ),
 )
 
-function assertIndiaOnlyDelivery(args: {
-  billingAddress?: { country: string } | undefined
-  shippingAddress?: { sameAsBilling: true } | { sameAsBilling: false; country: string } | undefined
-}) {
-  const billingCountry = args.billingAddress?.country
-  if (billingCountry && !isIndiaCountry(billingCountry)) {
-    throw new Error('Delivery is currently available only within India.')
-  }
-
-  const shipping = args.shippingAddress
-  if (shipping && shipping.sameAsBilling === false && !isIndiaCountry(shipping.country)) {
-    throw new Error('Delivery is currently available only within India.')
-  }
-}
-
-
 async function fetchJsonWithTimeout<T>(url: string, timeoutMs = 6000): Promise<T> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
@@ -140,7 +118,9 @@ async function fetchJsonWithTimeout<T>(url: string, timeoutMs = 6000): Promise<T
 async function fetchBtcPriceUsd(): Promise<number> {
   const sources: Array<() => Promise<number>> = [
     async () => {
-      const data = await fetchJsonWithTimeout<{ data?: { amount?: string } }>('https://api.coinbase.com/v2/prices/BTC-USD/spot')
+      const data = await fetchJsonWithTimeout<{ data?: { amount?: string } }>(
+        'https://api.coinbase.com/v2/prices/BTC-USD/spot',
+      )
       const amount = Number.parseFloat(String(data?.data?.amount ?? ''))
       if (!Number.isFinite(amount) || amount <= 0) throw new Error('Coinbase returned invalid price')
       return amount
@@ -227,7 +207,6 @@ export const createBtcOrder = mutation({
     shippingAddress: shippingAddressArg,
   },
   handler: async (ctx, args) => {
-    assertIndiaOnlyDelivery(args)
     const userId = await getAuthenticatedUserId(ctx)
 
     // Prevent order flooding: limit unpaid orders per user
@@ -276,10 +255,7 @@ export const saveBtcPaymentDetails = action({
       throw new Error('Order not found')
     }
 
-    const amountUsd =
-      order.status === 'partial_payment'
-        ? (order.partialAmountPending ?? order.total)
-        : order.total
+    const amountUsd = order.status === 'partial_payment' ? (order.partialAmountPending ?? order.total) : order.total
     if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
       throw new Error('Invalid order amount')
     }
@@ -467,9 +443,7 @@ export const savePaymentProof = mutation({
 
     // Delete the previous proof only if it hasn't been archived in history.
     // Archived proofs must be kept so admins can view them via the proof history.
-    const isArchived = (order.paymentProofHistory ?? []).some(
-      (h) => h.storageId === order.paymentProofStorageId,
-    )
+    const isArchived = (order.paymentProofHistory ?? []).some((h) => h.storageId === order.paymentProofStorageId)
     if (order.paymentProofStorageId && !isArchived) {
       await ctx.storage.delete(order.paymentProofStorageId)
     }
@@ -517,15 +491,14 @@ export const adminConfirmPayment = internalMutation({
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId)
     if (!order) return
-    const historyEntry =
-      order.paymentProofStorageId
-        ? {
-            storageId: order.paymentProofStorageId,
-            uploadedAt: order.paymentProofUploadedAt ?? Date.now(),
-            decision: 'paid' as const,
-            decidedAt: Date.now(),
-          }
-        : null
+    const historyEntry = order.paymentProofStorageId
+      ? {
+          storageId: order.paymentProofStorageId,
+          uploadedAt: order.paymentProofUploadedAt ?? Date.now(),
+          decision: 'paid' as const,
+          decidedAt: Date.now(),
+        }
+      : null
     await ctx.db.patch(args.orderId, {
       status: 'paid',
       partialAmountReceived: undefined,
@@ -554,16 +527,15 @@ export const adminMarkPartialPayment = internalMutation({
     const totalReceived = Number(((order.partialAmountReceived ?? 0) + args.amountReceived).toFixed(2))
     const amountPending = Number((order.total - totalReceived).toFixed(2))
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
-    const historyEntry =
-      order.paymentProofStorageId
-        ? {
-            storageId: order.paymentProofStorageId,
-            uploadedAt: order.paymentProofUploadedAt ?? Date.now(),
-            decision: 'partial_payment' as const,
-            decidedAt: Date.now(),
-            adminNote: args.adminNote,
-          }
-        : null
+    const historyEntry = order.paymentProofStorageId
+      ? {
+          storageId: order.paymentProofStorageId,
+          uploadedAt: order.paymentProofUploadedAt ?? Date.now(),
+          decision: 'partial_payment' as const,
+          decidedAt: Date.now(),
+          adminNote: args.adminNote,
+        }
+      : null
     await ctx.db.patch(args.orderId, {
       status: 'partial_payment',
       partialAmountReceived: totalReceived,
@@ -590,16 +562,15 @@ export const adminRejectPayment = internalMutation({
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId)
     if (!order) return
-    const historyEntry =
-      order.paymentProofStorageId
-        ? {
-            storageId: order.paymentProofStorageId,
-            uploadedAt: order.paymentProofUploadedAt ?? Date.now(),
-            decision: 'rejected' as const,
-            decidedAt: Date.now(),
-            adminNote: args.adminNote,
-          }
-        : null
+    const historyEntry = order.paymentProofStorageId
+      ? {
+          storageId: order.paymentProofStorageId,
+          uploadedAt: order.paymentProofUploadedAt ?? Date.now(),
+          decision: 'rejected' as const,
+          decidedAt: Date.now(),
+          adminNote: args.adminNote,
+        }
+      : null
     // If partial payment was already received, revert to partial_payment so the
     // user knows to upload proof for the remaining amount, not start from scratch.
     const revertStatus: 'pending_payment' | 'partial_payment' =
@@ -657,12 +628,7 @@ export const cancelExpiredOrders = internalMutation({
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
     const expiredOrders = await ctx.db
       .query('orders')
-      .filter((q) =>
-        q.and(
-          q.eq(q.field('status'), 'pending_payment'),
-          q.lt(q.field('createdAt'), sevenDaysAgo),
-        ),
-      )
+      .filter((q) => q.and(q.eq(q.field('status'), 'pending_payment'), q.lt(q.field('createdAt'), sevenDaysAgo)))
       .collect()
     for (const order of expiredOrders) {
       await ctx.db.patch(order._id, { status: 'cancelled' })

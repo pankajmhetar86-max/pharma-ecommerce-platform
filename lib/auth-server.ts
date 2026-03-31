@@ -1,5 +1,6 @@
 import { convexBetterAuthNextJs } from '@convex-dev/better-auth/nextjs'
 import { ConvexHttpClient } from 'convex/browser'
+import { createHmac } from 'crypto'
 import { cookies, headers } from 'next/headers'
 import { api } from '@/convex/_generated/api'
 
@@ -41,16 +42,55 @@ function normalizeEmail(email: string | null | undefined) {
   return email?.trim().toLowerCase() ?? null
 }
 
+function getRequestOrigin(request: Request) {
+  const forwardedProto = request.headers.get('x-forwarded-proto')
+  const forwardedHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+
+  if (forwardedHost) {
+    return `${forwardedProto ?? 'https'}://${forwardedHost}`
+  }
+
+  return process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin
+}
+
+const CAPTCHA_MAX_AGE_MS = 5 * 60 * 1000 // 5 minutes
+
+function verifyCaptchaProof(proof: string, timestampStr: string): boolean {
+  const secretKey = process.env.TURNSTILE_SECRET_KEY?.trim()
+  if (!secretKey) return false
+  const timestamp = parseInt(timestampStr, 10)
+  if (isNaN(timestamp)) return false
+  const age = Date.now() - timestamp
+  if (age < 0 || age > CAPTCHA_MAX_AGE_MS) return false
+  const expected = createHmac('sha256', secretKey).update(timestampStr).digest('hex')
+  return proof === expected
+}
+
+function getCaptchaProofFromCookie(request: Request): { proof: string; timestampStr: string } | null {
+  const cookieHeader = request.headers.get('cookie') ?? ''
+  const match = cookieHeader.match(/(?:^|;\s*)captcha_proof=([^;]+)/)
+  if (!match) return null
+  const [proof, timestampStr] = decodeURIComponent(match[1]).split(':')
+  if (!proof || !timestampStr) return null
+  return { proof, timestampStr }
+}
+
 function isSameOriginPost(request: Request) {
-  const origin = request.headers.get('origin') ?? request.headers.get('referer')
-  if (!origin || origin === 'null') {
-    return false
+  const originHeader = request.headers.get('origin')
+  const refererHeader = request.headers.get('referer')
+  const requestOrigin = getRequestOrigin(request)
+
+  const candidateOrigin = originHeader && originHeader !== 'null' ? originHeader : refererHeader
+  if (candidateOrigin) {
+    try {
+      return new URL(candidateOrigin).origin === requestOrigin
+    } catch {
+      return false
+    }
   }
-  try {
-    return new URL(origin).origin === new URL(request.url).origin
-  } catch {
-    return false
-  }
+
+  const fetchSite = request.headers.get('sec-fetch-site')
+  return fetchSite === 'same-origin' || fetchSite === 'same-site'
 }
 
 async function getAppUrl() {
@@ -144,6 +184,14 @@ export const handler: AuthBridge['handler'] = {
     // CSRF defense: require same-origin POSTs for auth endpoints that set cookies / mutate auth state.
     if (!isSameOriginPost(request)) {
       return new Response('Forbidden', { status: 403 })
+    }
+    // CAPTCHA enforcement for sign-in and sign-up endpoints.
+    const url = new URL(request.url)
+    if (url.pathname.includes('/sign-in/email') || url.pathname.includes('/sign-up/email')) {
+      const captchaCookie = getCaptchaProofFromCookie(request)
+      if (!captchaCookie || !verifyCaptchaProof(captchaCookie.proof, captchaCookie.timestampStr)) {
+        return new Response('CAPTCHA verification required.', { status: 403 })
+      }
     }
     try {
       return await bridge.handler.POST(request)

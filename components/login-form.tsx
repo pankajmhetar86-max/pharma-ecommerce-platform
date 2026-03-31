@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import type { Route } from 'next'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'
 import { authClient } from '@/lib/auth-client'
 import { sanitizeNextPath } from '@/lib/utils'
 
@@ -16,10 +17,38 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const turnstileRef = useRef<TurnstileInstance>(null)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setErrorMessage(null)
+
+    if (!turnstileToken) {
+      setErrorMessage('Please complete the CAPTCHA verification.')
+      return
+    }
+
+    try {
+      const captchaRes = await fetch('/api/verify-captcha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      })
+      const captchaData = await captchaRes.json() as { success: boolean }
+      if (!captchaData.success) {
+        setTurnstileToken(null)
+        turnstileRef.current?.reset()
+        setErrorMessage('CAPTCHA verification failed. Please try again.')
+        return
+      }
+    } catch {
+      setTurnstileToken(null)
+      turnstileRef.current?.reset()
+      setErrorMessage('Unable to verify CAPTCHA. Please try again.')
+      return
+    }
+
     await authClient.signIn.email(
       {
         email,
@@ -35,8 +64,14 @@ export function LoginForm() {
         },
         onError: (ctx) => {
           setIsSubmitting(false)
+          setTurnstileToken(null)
+          turnstileRef.current?.reset()
           // Avoid leaking whether an account exists (account enumeration).
-          setErrorMessage(/network|service|temporarily/i.test(ctx.error.message) ? 'Unable to sign in right now.' : 'Invalid email or password.')
+          setErrorMessage(
+            /network|service|temporarily/i.test(ctx.error.message)
+              ? 'Unable to sign in right now.'
+              : 'Invalid email or password.',
+          )
         },
       },
     )
@@ -93,6 +128,17 @@ export function LoginForm() {
                 className="rx-input"
               />
             </div>
+
+            {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                onSuccess={(token: string) => setTurnstileToken(token)}
+                onError={() => setTurnstileToken(null)}
+                onExpire={() => setTurnstileToken(null)}
+                options={{ theme: 'light', size: 'normal' }}
+              />
+            )}
 
             {errorMessage && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
