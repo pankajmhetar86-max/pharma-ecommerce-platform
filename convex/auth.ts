@@ -6,6 +6,7 @@ import { components } from './_generated/api'
 import { query } from './_generated/server'
 import type { DataModel } from './_generated/dataModel'
 import authConfig from './auth.config'
+import { SITE_NAME } from '../lib/site-inputs'
 
 const siteUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL
 
@@ -81,9 +82,9 @@ async function sendWelcomeEmail(email: string, name: string | null | undefined) 
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM ?? 'GetUrPill.com <onboarding@resend.dev>',
+        from: process.env.EMAIL_FROM ?? `${SITE_NAME} <onboarding@resend.dev>`,
         to: email,
-        subject: `Welcome to GetUrPill.com, ${displayName}!`,
+        subject: `Welcome to ${SITE_NAME}, ${displayName}!`,
         html,
       }),
     })
