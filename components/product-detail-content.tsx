@@ -54,7 +54,7 @@ function PackageRow({
       : expiryDate || null
 
   return (
-    <div className="grid gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-4 transition-all hover:border-teal-200 hover:bg-teal-50/30 md:grid-cols-[minmax(0,1.35fr)_minmax(120px,0.9fr)_minmax(160px,1.1fr)_140px] md:items-start">
+    <div className="grid gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-4 transition-all hover:border-teal-200 hover:bg-teal-50/30 md:grid-cols-[minmax(0,1fr)_minmax(70px,0.6fr)_minmax(200px,1.4fr)_140px] md:items-start">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 md:hidden">Quantity</p>
         <p className="mt-1 text-sm font-semibold text-slate-900 md:mt-0">{unitCountLabel}</p>
@@ -67,14 +67,16 @@ function PackageRow({
         <p className="mt-1 text-sm font-semibold text-slate-900 md:mt-0">{dosage}</p>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 md:hidden">Price</p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-          {originalPrice > price && <span className="text-xs text-slate-400 line-through">{formatPrice(originalPrice)}</span>}
-          <span className="text-lg font-extrabold text-slate-900">{formatPrice(price)}</span>
-          <span className="text-xs text-slate-500">{formatPrice(perUnit)} / {unit}</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span className="inline-flex items-center gap-x-2">
+            {originalPrice > price && <span className="text-xs text-slate-400 line-through">{formatPrice(originalPrice)}</span>}
+            <span className="text-lg font-extrabold text-slate-900">{formatPrice(price)}</span>
+          </span>
+          <span className="text-xs text-slate-500 whitespace-nowrap">{formatPrice(perUnit)} / {unit}</span>
           {savings > 0 && (
-            <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
+            <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 whitespace-nowrap">
               Save {formatPrice(savings)}
             </span>
           )}
@@ -289,11 +291,7 @@ export function ProductDetailContent({
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              {product.discount > 0 && (
-                <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-bold text-white">
-                  -{product.discount}% OFF
-                </span>
-              )}
+
               <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700">
                 {product.category}
               </span>
@@ -394,7 +392,7 @@ export function ProductDetailContent({
           <div className="space-y-2 p-4">
             {hasPricingMatrix && selectedDosageData ? (
               <>
-                <div className="hidden grid-cols-[minmax(0,1.35fr)_minmax(120px,0.9fr)_minmax(160px,1.1fr)_140px] gap-3 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200 md:grid">
+                <div className="hidden grid-cols-[minmax(0,1fr)_minmax(70px,0.6fr)_minmax(200px,1.4fr)_140px] gap-3 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200 md:grid">
                   <span className="text-left">Quantity</span>
                   <span className="text-left">Strength</span>
                   <span className="text-left">Price</span>
