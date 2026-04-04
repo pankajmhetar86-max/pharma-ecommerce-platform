@@ -69,16 +69,16 @@ function PackageRow({
 
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 md:hidden">Price</p>
-        {originalPrice > price && <p className="text-xs text-slate-400 line-through">{formatPrice(originalPrice)}</p>}
-        <p className="mt-1 text-lg font-extrabold text-slate-900">{formatPrice(price)}</p>
-        <p className="text-xs text-slate-500">
-          {formatPrice(perUnit)} / {unit}
-        </p>
-        {savings > 0 && (
-          <span className="mt-1 inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
-            Save {formatPrice(savings)}
-          </span>
-        )}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+          {originalPrice > price && <span className="text-xs text-slate-400 line-through">{formatPrice(originalPrice)}</span>}
+          <span className="text-lg font-extrabold text-slate-900">{formatPrice(price)}</span>
+          <span className="text-xs text-slate-500">{formatPrice(perUnit)} / {unit}</span>
+          {savings > 0 && (
+            <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
+              Save {formatPrice(savings)}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col items-stretch gap-2 md:w-[140px] md:justify-self-end">
