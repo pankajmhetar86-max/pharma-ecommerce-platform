@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 
@@ -6,10 +6,14 @@ export default async function ProductSlugPage({ params }: { params: Promise<{ sl
   const { slug } = await params
   const product = await fetchQuery(api.products.getBySlugOrId, { identifier: slug })
 
-  if (product?.category) {
+  if (!product) {
+    notFound()
+  }
+
+  if (product.category) {
     const categoryPath = product.category.replace(/ /g, '+')
     redirect(`/category/${categoryPath}/${slug}`)
   }
 
-  redirect('/products')
+  redirect('/')
 }

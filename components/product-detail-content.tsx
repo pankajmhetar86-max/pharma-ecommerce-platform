@@ -11,6 +11,59 @@ import { authClient } from '@/lib/auth-client'
 import { renderMarkdownContent } from '@/lib/markdown'
 import { formatPrice } from '@/lib/utils'
 
+// ── Product not found ──────────────────────────────────────────────────────────
+
+function ProductNotFound() {
+  const [countdown, setCountdown] = useState(5)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (countdown === 0) {
+      router.push('/')
+      return
+    }
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [countdown, router])
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 lg:px-6">
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
+        <p className="text-lg font-semibold text-slate-700">Product not found.</p>
+        <p className="mt-1 text-sm text-slate-400">This product may have been removed or the link is invalid.</p>
+
+        <div className="mt-5 flex flex-col items-center gap-3">
+          <p className="text-sm text-slate-500">
+            Redirecting to home page in{' '}
+            <span className="font-bold text-teal-600 tabular-nums">{countdown}</span>{' '}
+            second{countdown !== 1 ? 's' : ''}…
+          </p>
+          <div className="flex gap-1">
+            {[5, 4, 3, 2, 1].map((n) => (
+              <span
+                key={n}
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
+                  countdown >= n
+                    ? 'bg-teal-100 text-teal-700'
+                    : 'bg-slate-100 text-slate-300 line-through'
+                }`}
+              >
+                {n}
+              </span>
+            ))}
+          </div>
+          <Link
+            href="/"
+            className="mt-2 inline-flex items-center rounded-lg bg-teal-600 px-5 py-2 text-sm font-medium text-white hover:bg-teal-700 transition-colors"
+          >
+            Go home now
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Package row ────────────────────────────────────────────────────────────────
 
 type PackageRowProps = {
@@ -250,17 +303,7 @@ export function ProductDetailContent({
   }
 
   if (product === null) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 py-10 lg:px-6">
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
-          <p className="text-lg font-semibold text-slate-700">Product not found.</p>
-          <p className="mt-1 text-sm text-slate-400">This product may have been removed or the link is invalid.</p>
-          <Link href="/products" className="rx-btn-primary mt-5">
-            Back to products
-          </Link>
-        </div>
-      </div>
-    )
+    return <ProductNotFound />
   }
 
   const selectedDosageData = product.pricingMatrix?.find((d) => d.dosage === selectedDosage)
@@ -271,7 +314,7 @@ export function ProductDetailContent({
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 lg:px-6">
       <Link
-        href="/products"
+        href="/"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-700 hover:text-teal-600 transition-colors"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -311,7 +354,7 @@ export function ProductDetailContent({
               )}
             </div>
 
-            <h1 className="mt-2 text-xl font-extrabold text-slate-900 md:text-2xl lg:text-3xl">{product.genericName}</h1>
+            <p className="mt-2 text-xl font-extrabold text-slate-900 md:text-2xl lg:text-3xl">{product.genericName}</p>
             {product.name && <p className="mt-0.5 text-sm text-slate-400">Brand Name: {product.name}</p>}
 
             {product.description && (
