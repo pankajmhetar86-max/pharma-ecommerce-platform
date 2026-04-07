@@ -113,6 +113,8 @@ export function ImageSlider() {
             src={img.url}
             alt={img.altText ?? `Slide ${i + 1}`}
             title={img.titleText ?? img.altText ?? `Slide ${i + 1}`}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            fetchPriority={i === 0 ? 'high' : 'low'}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}
           />
         ))}
