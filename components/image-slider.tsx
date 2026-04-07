@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
+import type { Doc } from '@/convex/_generated/dataModel'
 import { ChevronLeft, ChevronRight, Zap, Shield, Truck, Bitcoin } from 'lucide-react'
 
 const FEATURE_BADGES = [
@@ -13,8 +14,9 @@ const FEATURE_BADGES = [
   { icon: Zap, text: 'Easy Ordering' },
 ]
 
-export function ImageSlider() {
-  const images = useQuery(api.admin.listActiveSliderImages)
+export function ImageSlider({ initialImages }: { initialImages?: Doc<'sliderImages'>[] }) {
+  const fetched = useQuery(api.admin.listActiveSliderImages)
+  const images = fetched ?? initialImages
   const [current, setCurrent] = useState(0)
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export function ImageSlider() {
     return () => clearInterval(timer)
   }, [images])
 
-  // Still loading — show a skeleton to avoid flash of fallback content
+  // Still loading and no initial data — show a skeleton
   if (images === undefined) {
     return (
       <section className="relative overflow-hidden rounded-2xl bg-slate-800 shadow-xl animate-pulse aspect-[16/6] w-full" />

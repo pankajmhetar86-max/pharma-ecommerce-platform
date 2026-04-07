@@ -3,11 +3,14 @@
 import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
+import type { Doc } from '@/convex/_generated/dataModel'
 import { CategorySidebar, type SidebarView } from './category-sidebar'
 import { ImageSlider } from './image-slider'
 import { ProductGrid } from './product-grid'
 
-export function HomePageContent() {
+type SliderImage = Doc<'sliderImages'>
+
+export function HomePageContent({ initialSliderImages }: { initialSliderImages?: SliderImage[] }) {
   const [selectedView, setSelectedView] = useState<SidebarView>('recommended')
 
   const fetchedCategories = useQuery(api.categories.list)
@@ -52,7 +55,7 @@ export function HomePageContent() {
     <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 lg:grid-cols-[260px_1fr] lg:grid-rows-[auto_1fr] lg:px-6">
       {/* 1st on mobile; desktop: right col, row 1 */}
       <div className="lg:col-start-2 lg:row-start-1">
-        <ImageSlider />
+        <ImageSlider initialImages={initialSliderImages} />
       </div>
       {/* 2nd on mobile; desktop: left col, spans both rows */}
       <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
