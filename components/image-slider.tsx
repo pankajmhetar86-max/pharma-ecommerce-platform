@@ -24,8 +24,15 @@ export function ImageSlider() {
     return () => clearInterval(timer)
   }, [images])
 
+  // Still loading — show a skeleton to avoid flash of fallback content
+  if (images === undefined) {
+    return (
+      <section className="relative overflow-hidden rounded-2xl bg-slate-800 shadow-xl animate-pulse aspect-[16/6] w-full" />
+    )
+  }
+
   // Fallback hero when no slider images configured
-  if (!images || images.length === 0) {
+  if (images.length === 0) {
     return (
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-xl">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
