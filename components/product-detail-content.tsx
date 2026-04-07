@@ -307,8 +307,8 @@ export function ProductDetailContent({
               )}
             </div>
 
-            <h1 className="mt-2 text-xl font-extrabold text-slate-900 md:text-2xl lg:text-3xl">{product.name}</h1>
-            {product.genericName && <p className="mt-0.5 text-sm text-slate-400">Generic: {product.genericName}</p>}
+            <h1 className="mt-2 text-xl font-extrabold text-slate-900 md:text-2xl lg:text-3xl">{product.genericName}</h1>
+            {product.name && <p className="mt-0.5 text-sm text-slate-400">Brand Name: {product.name}</p>}
 
             {product.description && (
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">{product.description}</p>
