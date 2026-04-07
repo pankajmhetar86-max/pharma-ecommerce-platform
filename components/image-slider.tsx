@@ -1,19 +1,22 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { ChevronLeft, ChevronRight, Zap, Shield, Truck } from 'lucide-react'
-import Link from 'next/link'
+import type { Doc } from '@/convex/_generated/dataModel'
+import { ChevronLeft, ChevronRight, Zap, Shield, Truck, Bitcoin } from 'lucide-react'
 
 const FEATURE_BADGES = [
+  { icon: Bitcoin, text: 'Bitcoin Only' },
   { icon: Shield, text: 'Quality Assured' },
   { icon: Truck, text: 'Fast Delivery' },
   { icon: Zap, text: 'Easy Ordering' },
 ]
 
-export function ImageSlider() {
-  const images = useQuery(api.admin.listActiveSliderImages)
+export function ImageSlider({ initialImages }: { initialImages?: Doc<'sliderImages'>[] }) {
+  const fetched = useQuery(api.admin.listActiveSliderImages)
+  const images = fetched ?? initialImages
   const [current, setCurrent] = useState(0)
 
   useEffect(() => {
@@ -24,8 +27,15 @@ export function ImageSlider() {
     return () => clearInterval(timer)
   }, [images])
 
+  // Still loading and no initial data — show a skeleton
+  if (images === undefined) {
+    return (
+      <section className="relative overflow-hidden rounded-2xl bg-slate-800 shadow-xl animate-pulse aspect-[16/6] w-full" />
+    )
+  }
+
   // Fallback hero when no slider images configured
-  if (!images || images.length === 0) {
+  if (images.length === 0) {
     return (
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-xl">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -60,7 +70,7 @@ export function ImageSlider() {
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/products"
+                href="/"
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-900/30 hover:from-teal-400 hover:to-cyan-400 transition-all"
               >
                 Browse Products
@@ -106,11 +116,25 @@ export function ImageSlider() {
             src={img.url}
             alt={img.altText ?? `Slide ${i + 1}`}
             title={img.titleText ?? img.altText ?? `Slide ${i + 1}`}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            fetchPriority={i === 0 ? 'high' : 'low'}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}
           />
         ))}
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
+        {/* Bottom gradient + badges overlay */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-1.5 px-3 pb-3 sm:gap-2 sm:px-4 sm:pb-4">
+          {FEATURE_BADGES.map(({ icon: Icon, text }) => (
+            <div
+              key={text}
+              className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/40 px-2 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-sm sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs"
+            >
+              <Icon className="h-2.5 w-2.5 text-teal-400 sm:h-3 sm:w-3" />
+              {text}
+            </div>
+          ))}
+        </div>
 
         {images.length > 1 && (
           <>
