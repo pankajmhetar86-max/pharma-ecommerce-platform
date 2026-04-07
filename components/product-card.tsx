@@ -41,13 +41,12 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
         {product.pricingMatrix && product.pricingMatrix.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {product.pricingMatrix.map((entry) => (
-              <Link
+              <span
                 key={entry.dosage}
-                href={productUrl(product, `?dosage=${encodeURIComponent(entry.dosage)}`)}
-                className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
+                className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-700"
               >
                 {entry.dosage}
-              </Link>
+              </span>
             ))}
           </div>
         )}
