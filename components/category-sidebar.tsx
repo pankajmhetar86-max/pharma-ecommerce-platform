@@ -25,8 +25,7 @@ export function CategorySidebar({
     <aside className="rx-card h-fit overflow-hidden">
       {/* Header */}
       <div className="border-b border-slate-100 bg-gradient-to-r from-teal-600 to-cyan-600 px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-teal-100">Browse by</p>
-        <p className="text-sm font-bold text-white">Categories</p>
+        <p className="text-sm font-bold text-white whitespace-nowrap">Browse by Categories</p>
       </div>
 
       {/* Mobile toggle */}
