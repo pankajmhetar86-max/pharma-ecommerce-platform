@@ -1,8 +1,7 @@
-import { Suspense } from 'react'
 import type { Metadata } from 'next'
+import { permanentRedirect } from 'next/navigation'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
-import { ProductDetailContent } from '@/components/product-detail-content'
 
 export async function generateMetadata({
   params,
@@ -29,20 +28,23 @@ export async function generateMetadata({
 
 export default async function ProductCategorySlugPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ category: string; slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { slug } = await params
+  const resolvedSearchParams = await searchParams
   const product = await fetchQuery(api.products.getBySlugOrId, { identifier: slug })
-  return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
-          <p className="text-sm text-slate-500">Loading...</p>
-        </div>
-      }
-    >
-      <ProductDetailContent productId={slug} initialProduct={product ?? undefined} />
-    </Suspense>
-  )
+
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(resolvedSearchParams)) {
+    if (Array.isArray(value)) {
+      value.forEach((entry) => query.append(key, entry))
+    } else if (value !== undefined) {
+      query.set(key, value)
+    }
+  }
+
+  permanentRedirect(`/${slug}${query.size > 0 ? `?${query.toString()}` : ''}`)
 }

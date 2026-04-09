@@ -4,9 +4,8 @@ import Link from 'next/link'
 import type { Doc } from '@/convex/_generated/dataModel'
 
 function productUrl(product: Doc<'products'>, suffix = '') {
-  const categoryPath = product.category.replace(/ /g, '+')
   const id = product.slug ?? product._id
-  return `/category/${categoryPath}/${id}${suffix}`
+  return `/${id}${suffix}`
 }
 
 export function ProductCard({ product }: { product: Doc<'products'> }) {

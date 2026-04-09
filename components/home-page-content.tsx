@@ -14,37 +14,20 @@ export function HomePageContent({ initialSliderImages }: { initialSliderImages?:
   const [selectedView, setSelectedView] = useState<SidebarView>('recommended')
 
   const fetchedCategories = useQuery(api.categories.list)
-  const recommendedProducts = useQuery(
-    api.products.listRecommended,
-    selectedView === 'recommended' ? {} : 'skip',
-  )
-  const allProducts = useQuery(
-    api.products.list,
-    selectedView === 'all' ? { limit: 40 } : 'skip',
-  )
+  const recommendedProducts = useQuery(api.products.listRecommended, selectedView === 'recommended' ? {} : 'skip')
+  const allProducts = useQuery(api.products.list, selectedView === 'all' ? { limit: 40 } : 'skip')
   const categoryProducts = useQuery(
     api.products.list,
-    selectedView !== 'recommended' && selectedView !== 'all'
-      ? { category: selectedView, limit: 40 }
-      : 'skip',
+    selectedView !== 'recommended' && selectedView !== 'all' ? { category: selectedView, limit: 40 } : 'skip',
   )
 
-  const categories =
-    fetchedCategories?.map((category) => ({ _id: category._id, name: category.name })) ?? []
+  const categories = fetchedCategories?.map((category) => ({ _id: category._id, name: category.name })) ?? []
 
   const heading =
-    selectedView === 'recommended'
-      ? 'Recommended'
-      : selectedView === 'all'
-        ? 'All Products'
-        : selectedView
+    selectedView === 'recommended' ? 'Recommended' : selectedView === 'all' ? 'All Products' : selectedView
 
   const displayProducts =
-    selectedView === 'recommended'
-      ? recommendedProducts
-      : selectedView === 'all'
-        ? allProducts
-        : categoryProducts
+    selectedView === 'recommended' ? recommendedProducts : selectedView === 'all' ? allProducts : categoryProducts
 
   const emptyMessage =
     selectedView === 'recommended' && recommendedProducts?.length === 0
@@ -59,11 +42,7 @@ export function HomePageContent({ initialSliderImages }: { initialSliderImages?:
       </div>
       {/* 2nd on mobile; desktop: left col, spans both rows */}
       <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
-        <CategorySidebar
-          categories={categories}
-          selectedView={selectedView}
-          onSelect={setSelectedView}
-        />
+        <CategorySidebar categories={categories} selectedView={selectedView} onSelect={setSelectedView} />
       </div>
       {/* 3rd on mobile; desktop: right col, row 2 */}
       <section className="space-y-3 lg:col-start-2 lg:row-start-2">
