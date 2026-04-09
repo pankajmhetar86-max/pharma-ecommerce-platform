@@ -34,18 +34,15 @@ function ProductNotFound() {
 
         <div className="mt-5 flex flex-col items-center gap-3">
           <p className="text-sm text-slate-500">
-            Redirecting to home page in{' '}
-            <span className="font-bold text-teal-600 tabular-nums">{countdown}</span>{' '}
-            second{countdown !== 1 ? 's' : ''}…
+            Redirecting to home page in <span className="font-bold text-teal-600 tabular-nums">{countdown}</span> second
+            {countdown !== 1 ? 's' : ''}…
           </p>
           <div className="flex gap-1">
             {[5, 4, 3, 2, 1].map((n) => (
               <span
                 key={n}
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
-                  countdown >= n
-                    ? 'bg-teal-100 text-teal-700'
-                    : 'bg-slate-100 text-slate-300 line-through'
+                  countdown >= n ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-300 line-through'
                 }`}
               >
                 {n}
@@ -124,10 +121,14 @@ function PackageRow({
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 md:hidden">Price</p>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className="inline-flex items-center gap-x-2">
-            {originalPrice > price && <span className="text-xs text-slate-400 line-through">{formatPrice(originalPrice)}</span>}
+            {originalPrice > price && (
+              <span className="text-xs text-slate-400 line-through">{formatPrice(originalPrice)}</span>
+            )}
             <span className="text-lg font-extrabold text-slate-900">{formatPrice(price)}</span>
           </span>
-          <span className="text-xs text-slate-500 whitespace-nowrap">{formatPrice(perUnit)} / {unit}</span>
+          <span className="text-xs text-slate-500 whitespace-nowrap">
+            {formatPrice(perUnit)} / {unit}
+          </span>
           {savings > 0 && (
             <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600 whitespace-nowrap">
               Save {formatPrice(savings)}
@@ -360,59 +361,6 @@ export function ProductDetailContent({
             {product.description && (
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">{product.description}</p>
             )}
-
-            {/* Simple add-to-cart when no dosage tabs */}
-            {dosages.length === 0 && (
-              <div className="mt-4">
-                <p className="text-2xl font-extrabold text-slate-900">
-                  {formatPrice(product.price ?? 0)}
-                  <span className="ml-1.5 text-sm font-normal text-slate-400">per {product.unit}</span>
-                </p>
-                {getSelectionQuantity() > 0 ? (
-                  <div className="mt-4 inline-flex items-center rounded-full border border-slate-200 bg-white shadow-sm">
-                    <button
-                      type="button"
-                      disabled={updatingKey === getSelectionKey() || !product.inStock}
-                      onClick={() => void handleDecreaseQuantity(undefined, undefined, getSelectionQuantity())}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-l-full text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="flex min-w-10 items-center justify-center text-sm font-bold text-slate-900">
-                      {updatingKey === getSelectionKey() ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
-                      ) : (
-                        getSelectionQuantity()
-                      )}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={updatingKey === getSelectionKey() || !product.inStock}
-                      onClick={() => void handleIncreaseQuantity()}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-r-full text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => void handleAddToCart()}
-                    disabled={updatingKey !== null || !product.inStock}
-                    className="rx-btn-primary mt-4"
-                  >
-                    {updatingKey === getSelectionKey() ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ShoppingCart className="h-4 w-4" />
-                    )}
-                    {updatingKey === getSelectionKey() ? 'Adding...' : 'Add to Cart'}
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -455,7 +403,8 @@ export function ProductDetailContent({
                   >
                     {packages.map((pkg: { pillCount: number }) => (
                       <option key={pkg.pillCount} value={pkg.pillCount}>
-                        {pkg.pillCount} {product.unit}{pkg.pillCount === 1 ? '' : 's'}
+                        {pkg.pillCount} {product.unit}
+                        {pkg.pillCount === 1 ? '' : 's'}
                       </option>
                     ))}
                   </select>
