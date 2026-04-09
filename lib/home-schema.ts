@@ -7,7 +7,6 @@ const BREADCRUMB_NAMES: Record<string, string> = {
   '/': 'Home',
   '/about-us': 'About Us',
   '/contact-us': 'Contact Us',
-  '/products': 'Products',
   '/faq': 'FAQ',
   '/our-policy': 'Our Policy',
   '/terms-conditions': 'Terms and Conditions',
@@ -37,7 +36,7 @@ function getProductOfferPrice(product: HomeProduct) {
     }
   }
 
-  return Number((product.price * (1 - product.discount / 100)).toFixed(2))
+  return Number(((product.price ?? 0) * (1 - (product.discount ?? 0) / 100)).toFixed(2))
 }
 
 export function buildSiteSchemas() {

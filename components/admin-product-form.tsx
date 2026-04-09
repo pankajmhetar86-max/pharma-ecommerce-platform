@@ -25,12 +25,10 @@ export type ProductFormData = {
   category: string
   description: string
   fullDescription: string
-  price: number
   unit: string
   pricingMatrix: DosagePricing[]
   image: string
   imageAlt: string
-  discount: number
   inStock: boolean
   slug: string
   seoTitle: string
@@ -50,12 +48,10 @@ const EMPTY_FORM: ProductFormData = {
   category: '',
   description: '',
   fullDescription: '',
-  price: 0,
   unit: 'pill',
   pricingMatrix: [],
   image: '',
   imageAlt: '',
-  discount: 0,
   inStock: true,
   slug: '',
   seoTitle: '',
@@ -100,12 +96,10 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
           category: initial.category,
           description: initial.description,
           fullDescription: initial.fullDescription ?? '',
-          price: initial.price,
           unit: initial.unit,
           pricingMatrix: matrixFromDoc(initial),
           image: initial.image,
           imageAlt: initial.imageAlt ?? '',
-          discount: initial.discount,
           inStock: initial.inStock,
           slug: initial.slug ?? slugify(`${initial.name} ${initial.genericName}`),
           seoTitle: initial.seoTitle ?? '',
@@ -256,7 +250,16 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     if (!form.name.trim()) return setError('Brand name is required.')
     if (!form.genericName.trim()) return setError('Generic name is required.')
     if (!form.category) return setError('Category is required.')
-    if (form.price <= 0) return setError('Price must be greater than 0.')
+    if (form.pricingMatrix.length === 0) return setError('Add at least one dosage with package pricing.')
+    for (const dosagePricing of form.pricingMatrix) {
+      if (!dosagePricing.dosage.trim()) return setError('Each pricing section needs a dosage.')
+      if (dosagePricing.packages.length === 0) {
+        return setError(`Add at least one package price for ${dosagePricing.dosage.trim() || 'each dosage'}.`)
+      }
+      for (const pkg of dosagePricing.packages) {
+        if (Number(pkg.price) <= 0) return setError('Package price must be greater than 0.')
+      }
+    }
     setSaving(true)
     try {
       await onSubmit(form)

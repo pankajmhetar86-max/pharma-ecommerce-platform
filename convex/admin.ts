@@ -273,6 +273,54 @@ const pricingMatrixArg = v.optional(
   ),
 )
 
+function normalizePricingMatrix(
+  pricingMatrix:
+    | Array<{
+        dosage: string
+        packages: Array<{
+          pillCount: number
+          originalPrice: number
+          price: number
+          benefits?: string[]
+          expiryDate?: string
+        }>
+      }>
+    | undefined,
+) {
+  if (!pricingMatrix || pricingMatrix.length === 0) {
+    throw new Error('At least one dosage with package pricing is required.')
+  }
+
+  const normalized = pricingMatrix.map((dosage) => {
+    const dosageName = dosage.dosage.trim()
+    if (!dosageName) {
+      throw new Error('Each pricing entry must include a dosage.')
+    }
+    if (dosage.packages.length === 0) {
+      throw new Error(`At least one package price is required for ${dosageName}.`)
+    }
+
+    return {
+      dosage: dosageName,
+      packages: dosage.packages.map((pkg) => {
+        if (!Number.isFinite(pkg.pillCount) || pkg.pillCount <= 0) {
+          throw new Error(`Package quantity must be greater than 0 for ${dosageName}.`)
+        }
+        if (!Number.isFinite(pkg.price) || pkg.price <= 0) {
+          throw new Error(`Package price must be greater than 0 for ${dosageName}.`)
+        }
+
+        return pkg
+      }),
+    }
+  })
+
+  return {
+    pricingMatrix: normalized,
+    dosageOptions: normalized.map((dosage) => dosage.dosage),
+  }
+}
+
 export const createProduct = mutation({
   args: {
     name: v.string(),
@@ -280,13 +328,11 @@ export const createProduct = mutation({
     category: v.string(),
     description: v.string(),
     fullDescription: v.optional(v.string()),
-    price: v.number(),
     unit: v.string(),
     dosageOptions: v.array(v.string()),
     pricingMatrix: pricingMatrixArg,
     image: v.string(),
     imageAlt: v.optional(v.string()),
-    discount: v.number(),
     inStock: v.boolean(),
     slug: v.optional(v.string()),
     seoTitle: v.optional(v.string()),
@@ -296,10 +342,11 @@ export const createProduct = mutation({
   handler: async (ctx, args) => {
     const admin = await getAdminUser(ctx)
     if (!admin) throw new Error('Not authorized')
+    const pricing = normalizePricingMatrix(args.pricingMatrix)
     await ensureCategoryExists(ctx, args.category)
     const slug = await resolveSlug(ctx, args.slug || `${args.name} ${args.genericName}`)
     const searchText = `${args.name} ${args.genericName}`.toLowerCase()
-    return ctx.db.insert('products', { ...args, slug, searchText })
+    return ctx.db.insert('products', { ...args, ...pricing, slug, searchText })
   },
 })
 
@@ -311,13 +358,11 @@ export const updateProduct = mutation({
     category: v.string(),
     description: v.string(),
     fullDescription: v.optional(v.string()),
-    price: v.number(),
     unit: v.string(),
     dosageOptions: v.array(v.string()),
     pricingMatrix: pricingMatrixArg,
     image: v.string(),
     imageAlt: v.optional(v.string()),
-    discount: v.number(),
     inStock: v.boolean(),
     slug: v.optional(v.string()),
     seoTitle: v.optional(v.string()),
@@ -327,11 +372,12 @@ export const updateProduct = mutation({
   handler: async (ctx, args) => {
     const admin = await getAdminUser(ctx)
     if (!admin) throw new Error('Not authorized')
+    const pricing = normalizePricingMatrix(args.pricingMatrix)
     await ensureCategoryExists(ctx, args.category)
     const { id, ...fields } = args
     const slug = await resolveSlug(ctx, fields.slug || `${fields.name} ${fields.genericName}`, id)
     const searchText = `${fields.name} ${fields.genericName}`.toLowerCase()
-    await ctx.db.patch(id, { ...fields, slug, searchText })
+    await ctx.db.patch(id, { ...fields, ...pricing, slug, searchText })
   },
 })
 

@@ -1,6 +1,9 @@
 export const SITE_NAME = 'gardenerpersonal.click'
 const DEFAULT_SITE_URL = 'https://www.gardenerpersonal.click'
-export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.SITE_URL ?? DEFAULT_SITE_URL).replace(/\/+$/, '')
+export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.SITE_URL ?? DEFAULT_SITE_URL).replace(
+  /\/+$/,
+  '',
+)
 
 function normalizeGoogleTagId(value: string | undefined) {
   const trimmed = (value ?? '').trim()
@@ -41,7 +44,7 @@ export const siteInputs = {
       },
       breadcrumbs: {
         enabled: true,
-        paths: ['/', '/about-us', '/contact-us', '/products'],
+        paths: ['/', '/about-us', '/contact-us'],
       },
       products: {
         enabled: true,
