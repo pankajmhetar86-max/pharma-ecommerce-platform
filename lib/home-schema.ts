@@ -37,7 +37,7 @@ function getProductOfferPrice(product: HomeProduct) {
     }
   }
 
-  return Number((product.price * (1 - product.discount / 100)).toFixed(2))
+  return Number(((product.price ?? 0) * (1 - (product.discount ?? 0) / 100)).toFixed(2))
 }
 
 export function buildSiteSchemas() {

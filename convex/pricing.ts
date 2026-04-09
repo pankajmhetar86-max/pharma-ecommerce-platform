@@ -52,6 +52,6 @@ export function resolveProductSelection(product: Doc<'products'>, selection: Pro
   return {
     dosage,
     pillCount: undefined,
-    unitPrice: Number((product.price * (1 - (product.discount ?? 0) / 100)).toFixed(2)),
+    unitPrice: Number(((product.price ?? 0) * (1 - (product.discount ?? 0) / 100)).toFixed(2)),
   }
 }

@@ -365,7 +365,7 @@ export function ProductDetailContent({
             {dosages.length === 0 && (
               <div className="mt-4">
                 <p className="text-2xl font-extrabold text-slate-900">
-                  {formatPrice(product.price)}
+                  {formatPrice(product.price ?? 0)}
                   <span className="ml-1.5 text-sm font-normal text-slate-400">per {product.unit}</span>
                 </p>
                 {getSelectionQuantity() > 0 ? (
