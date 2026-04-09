@@ -118,6 +118,8 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const [dragOver, setDragOver] = useState(false)
   const [matrixOpen, setMatrixOpen] = useState(true)
   const [newDosageForMatrix, setNewDosageForMatrix] = useState('')
+  const [selectedDosage, setSelectedDosage] = useState('')
+  const [selectedPackage, setSelectedPackage] = useState('')
   const [showNewCategory, setShowNewCategory] = useState(false)
   const [newCategoryInput, setNewCategoryInput] = useState('')
   const [creatingCategory, setCreatingCategory] = useState(false)
@@ -148,6 +150,29 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     nameRef.current?.focus()
   }, [])
 
+  useEffect(() => {
+    if (form.pricingMatrix.length === 0) {
+      setSelectedDosage('')
+      return
+    }
+
+    if (!form.pricingMatrix.some((entry) => entry.dosage === selectedDosage)) {
+      setSelectedDosage(form.pricingMatrix[0].dosage)
+    }
+  }, [form.pricingMatrix, selectedDosage])
+
+  useEffect(() => {
+    const currentDosageEntry = form.pricingMatrix.find((entry) => entry.dosage === selectedDosage)
+    if (!currentDosageEntry || currentDosageEntry.packages.length === 0) {
+      setSelectedPackage('')
+      return
+    }
+
+    if (!currentDosageEntry.packages.some((_, index) => String(index) === selectedPackage)) {
+      setSelectedPackage('0')
+    }
+  }, [form.pricingMatrix, selectedDosage, selectedPackage])
+
   const set = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
@@ -156,6 +181,8 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     const d = dosage.trim()
     if (!d || form.pricingMatrix.some((m) => m.dosage === d)) return
     set('pricingMatrix', [...form.pricingMatrix, { dosage: d, packages: [] }])
+    setSelectedDosage(d)
+    setSelectedPackage('')
     setNewDosageForMatrix('')
   }
 
@@ -167,6 +194,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   }
 
   const addPackageToDosage = (dosageIdx: number) => {
+    const nextPackageIdx = form.pricingMatrix[dosageIdx]?.packages.length ?? 0
     const updated = form.pricingMatrix.map((d, i) =>
       i === dosageIdx
         ? {
@@ -176,6 +204,10 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
         : d,
     )
     set('pricingMatrix', updated)
+    if (form.pricingMatrix[dosageIdx]) {
+      setSelectedDosage(form.pricingMatrix[dosageIdx].dosage)
+      setSelectedPackage(String(nextPackageIdx))
+    }
   }
 
   const removePackage = (dosageIdx: number, pkgIdx: number) => {
@@ -302,6 +334,16 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const inputClass =
     'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none ring-sky-200 focus:border-sky-400 focus:ring-2 bg-white'
   const labelClass = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500'
+  const selectedDosageIdx = form.pricingMatrix.findIndex((entry) => entry.dosage === selectedDosage)
+  const activeDosageIdx = selectedDosageIdx >= 0 ? selectedDosageIdx : 0
+  const activeDosageEntry = form.pricingMatrix[activeDosageIdx]
+  const selectedPackageIdx =
+    selectedPackage !== '' && Number.isInteger(Number(selectedPackage)) ? Number(selectedPackage) : -1
+  const activePackageIdx =
+    activeDosageEntry && selectedPackageIdx >= 0 && selectedPackageIdx < activeDosageEntry.packages.length
+      ? selectedPackageIdx
+      : 0
+  const activePackage = activeDosageEntry?.packages[activePackageIdx]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
@@ -569,14 +611,52 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                     </button>
                   </div>
 
-                  {form.pricingMatrix.map((dosageEntry, dosageIdx) => (
-                    <div key={dosageEntry.dosage} className="rounded-lg border border-slate-200 bg-white">
-                      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
-                        <span className="text-sm font-bold text-slate-800">{dosageEntry.dosage}</span>
+                  {form.pricingMatrix.length > 0 && activeDosageEntry && (
+                    <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className={labelClass}>Selected Dosage</label>
+                          <select
+                            className={inputClass}
+                            value={activeDosageEntry.dosage}
+                            onChange={(e) => setSelectedDosage(e.target.value)}
+                          >
+                            {form.pricingMatrix.map((entry) => (
+                              <option key={entry.dosage} value={entry.dosage}>
+                                {entry.dosage}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelClass}>Selected Package</label>
+                          <select
+                            className={inputClass}
+                            value={activeDosageEntry.packages.length > 0 ? String(activePackageIdx) : ''}
+                            onChange={(e) => setSelectedPackage(e.target.value)}
+                            disabled={activeDosageEntry.packages.length === 0}
+                          >
+                            {activeDosageEntry.packages.length === 0 ? (
+                              <option value="">No packages yet</option>
+                            ) : (
+                              activeDosageEntry.packages.map((pkg, pkgIdx) => (
+                                <option key={`${activeDosageEntry.dosage}-${pkgIdx}`} value={String(pkgIdx)}>
+                                  {pkg.pillCount
+                                    ? `${pkg.pillCount} ${form.unit}${pkg.pillCount === '1' ? '' : 's'}`
+                                    : `Package ${pkgIdx + 1}`}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                        <p className="text-sm font-semibold text-slate-800">{activeDosageEntry.dosage}</p>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => addPackageToDosage(dosageIdx)}
+                            onClick={() => addPackageToDosage(activeDosageIdx)}
                             className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
                           >
                             <Plus className="h-3 w-3" />
@@ -584,7 +664,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => removeDosagePricing(dosageEntry.dosage)}
+                            onClick={() => removeDosagePricing(activeDosageEntry.dosage)}
                             className="text-slate-400 hover:text-red-500"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -592,83 +672,87 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                         </div>
                       </div>
 
-                      {dosageEntry.packages.length === 0 ? (
-                        <p className="px-4 py-3 text-xs text-slate-400">
-                          No packages yet. Click "Add Package" to add one.
-                        </p>
+                      {!activePackage ? (
+                        <p className="text-xs text-slate-400">No packages yet. Click "Add Package" to add one.</p>
                       ) : (
-                        <div className="divide-y divide-slate-100">
-                          {dosageEntry.packages.map((pkg, pkgIdx) => (
-                            <div key={pkgIdx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-4 py-3">
-                              <div>
-                                <label className="mb-1 block text-xs text-slate-400">Qty ({form.unit}s)</label>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  className={inputClass}
-                                  placeholder="e.g. 30"
-                                  value={pkg.pillCount}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'pillCount', e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label className="mb-1 block text-xs text-slate-400">Original $</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={0.01}
-                                  className={inputClass}
-                                  placeholder="34.57"
-                                  value={pkg.originalPrice}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'originalPrice', e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label className="mb-1 block text-xs text-slate-400">Sale $</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={0.01}
-                                  className={inputClass}
-                                  placeholder="18.99"
-                                  value={pkg.price}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'price', e.target.value)}
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removePackage(dosageIdx, pkgIdx)}
-                                className="mt-5 text-slate-400 hover:text-red-500"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                              <div>
-                                <label className="mb-1 block text-xs text-slate-400">Expiration Date</label>
-                                <input
-                                  type="date"
-                                  className={inputClass}
-                                  value={pkg.expiryDate}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'expiryDate', e.target.value)}
-                                />
-                              </div>
-                              <div className="col-span-2">
-                                <label className="mb-1 block text-xs text-slate-400">
-                                  Benefits (comma-separated, e.g. "4 free ED pills, Package delivery insurance")
-                                </label>
-                                <input
-                                  type="text"
-                                  className={inputClass}
-                                  placeholder="4 free ED pills, Package delivery insurance, Next orders 10% discount"
-                                  value={pkg.benefits}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'benefits', e.target.value)}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-400">Qty ({form.unit}s)</label>
+                            <input
+                              type="number"
+                              min={1}
+                              className={inputClass}
+                              placeholder="e.g. 30"
+                              value={activePackage.pillCount}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'pillCount', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-400">Original $</label>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              className={inputClass}
+                              placeholder="34.57"
+                              value={activePackage.originalPrice}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'originalPrice', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-400">Sale $</label>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              className={inputClass}
+                              placeholder="18.99"
+                              value={activePackage.price}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'price', e.target.value)
+                              }
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removePackage(activeDosageIdx, activePackageIdx)}
+                            className="mt-5 text-slate-400 hover:text-red-500"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-400">Expiration Date</label>
+                            <input
+                              type="date"
+                              className={inputClass}
+                              value={activePackage.expiryDate}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'expiryDate', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="mb-1 block text-xs text-slate-400">
+                              Benefits (comma-separated, e.g. "4 free ED pills, Package delivery insurance")
+                            </label>
+                            <input
+                              type="text"
+                              className={inputClass}
+                              placeholder="4 free ED pills, Package delivery insurance, Next orders 10% discount"
+                              value={activePackage.benefits}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'benefits', e.target.value)
+                              }
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
