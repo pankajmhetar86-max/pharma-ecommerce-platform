@@ -375,7 +375,14 @@ type RowProps = {
 
 function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibility, onToggleRecommended }: RowProps) {
   const visible = product.isVisible !== false
-  const discountedPrice = product.price * (1 - product.discount / 100)
+  let lowestPrice: number | null = null
+  if (product.pricingMatrix && product.pricingMatrix.length > 0) {
+    for (const dosage of product.pricingMatrix) {
+      for (const pkg of dosage.packages) {
+        if (lowestPrice === null || pkg.price < lowestPrice) lowestPrice = pkg.price
+      }
+    }
+  }
 
   return (
     <tr className={`group transition-colors hover:bg-slate-50 ${!visible ? 'opacity-50' : ''}`}>
@@ -404,9 +411,10 @@ function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibili
         </span>
       </td>
       <td className="px-4 py-3 text-slate-700">
-        <span className="font-semibold">₹{discountedPrice.toFixed(2)}</span>
-        {product.discount > 0 && (
-          <span className="ml-1 text-xs text-slate-400 line-through">₹{product.price.toFixed(2)}</span>
+        {lowestPrice !== null ? (
+          <span className="font-semibold">from ₹{lowestPrice.toFixed(2)}</span>
+        ) : (
+          <span className="text-slate-400">—</span>
         )}
       </td>
       <td className="px-4 py-3 text-center">
