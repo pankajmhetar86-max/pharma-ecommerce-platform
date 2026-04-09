@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { api } from '@/convex/_generated/api'
 import type { Doc, Id } from '@/convex/_generated/dataModel'
+import { toProductImagePath, toPublicImagePath } from '@/lib/image-url'
 import { AdminProductForm, type ProductFormData } from './admin-product-form'
 import { formatPrice } from '@/lib/utils'
 
@@ -397,7 +398,7 @@ function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibili
         <div className="flex items-center gap-3">
           {product.image ? (
             <img
-              src={product.image}
+              src={toProductImagePath(product.slug ?? product._id, product.image)}
               alt={product.imageAlt ?? product.name}
               className="h-10 w-10 shrink-0 rounded-lg border border-slate-100 object-cover"
             />
@@ -1453,7 +1454,7 @@ function OrderDetailModal({
                         <div className="flex items-center gap-2">
                           {item.image && (
                             <img
-                              src={item.image}
+                              src={toPublicImagePath(item.image)}
                               alt={item.name}
                               className="h-8 w-8 shrink-0 rounded-md border border-slate-100 object-cover"
                             />

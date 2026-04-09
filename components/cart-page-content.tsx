@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMutation, useQuery } from 'convex/react'
 import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import { api } from '@/convex/_generated/api'
+import { toPublicImagePath } from '@/lib/image-url'
 import { formatPrice } from '@/lib/utils'
 
 export function CartPageContent() {
@@ -60,7 +61,7 @@ export function CartPageContent() {
                   <li key={itemKey} className="rx-card p-4">
                     <div className="flex gap-4">
                       <img
-                        src={item.image}
+                        src={toPublicImagePath(item.image)}
                         alt={item.name}
                         className="h-18 w-18 shrink-0 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-2 h-[72px] w-[72px] object-contain"
                       />

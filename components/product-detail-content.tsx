@@ -244,7 +244,7 @@ export function ProductDetailContent({
 
   useEffect(() => {
     if (!product) return
-    const paramDosage = searchParams.get('dosage')
+    const paramDosage = searchParams?.get('dosage')
     if (paramDosage && dosages.includes(paramDosage)) {
       setSelectedDosage(paramDosage)
     } else if (dosages.length > 0 && !selectedDosage) {

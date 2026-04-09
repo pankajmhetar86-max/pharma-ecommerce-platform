@@ -11,7 +11,7 @@ import { sanitizeNextPath } from '@/lib/utils'
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const nextPath = sanitizeNextPath(searchParams.get('next'))
+  const nextPath = sanitizeNextPath(searchParams?.get('next') ?? null)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
