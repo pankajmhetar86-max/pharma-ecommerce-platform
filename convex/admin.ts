@@ -288,7 +288,10 @@ function normalizePricingMatrix(
     | undefined,
 ) {
   if (!pricingMatrix || pricingMatrix.length === 0) {
-    throw new Error('At least one dosage with package pricing is required.')
+    return {
+      pricingMatrix: undefined,
+      dosageOptions: [],
+    }
   }
 
   const normalized = pricingMatrix.map((dosage) => {

@@ -253,7 +253,6 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     if (!form.name.trim()) return setError('Brand name is required.')
     if (!form.genericName.trim()) return setError('Generic name is required.')
     if (!form.category) return setError('Category is required.')
-    if (form.pricingMatrix.length === 0) return setError('Add at least one dosage with package pricing.')
     for (const dosagePricing of form.pricingMatrix) {
       if (!dosagePricing.dosage.trim()) return setError('Each pricing section needs a dosage.')
       if (dosagePricing.packages.length === 0) {
