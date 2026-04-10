@@ -13,23 +13,96 @@ function isSafeHref(href: string) {
 }
 
 const SAFE_CSS_PROPERTIES = new Set([
-  'color', 'background', 'background-color', 'font-size', 'font-weight', 'font-style',
-  'text-align', 'text-decoration', 'text-transform', 'line-height', 'letter-spacing',
-  'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-  'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-  'border', 'border-radius', 'border-color', 'border-width', 'border-style',
-  'display', 'width', 'max-width', 'min-width', 'height', 'max-height', 'min-height',
-  'opacity', 'overflow', 'vertical-align', 'white-space', 'word-break',
-  'flex', 'flex-direction', 'flex-wrap', 'justify-content', 'align-items', 'gap',
-  'grid-template-columns', 'grid-template-rows', 'grid-gap',
-  'list-style', 'list-style-type', 'box-shadow', 'text-shadow',
+  'color',
+  'background',
+  'background-color',
+  'font-size',
+  'font-weight',
+  'font-style',
+  'text-align',
+  'text-decoration',
+  'text-transform',
+  'line-height',
+  'letter-spacing',
+  'padding',
+  'padding-top',
+  'padding-right',
+  'padding-bottom',
+  'padding-left',
+  'margin',
+  'margin-top',
+  'margin-right',
+  'margin-bottom',
+  'margin-left',
+  'border',
+  'border-radius',
+  'border-color',
+  'border-width',
+  'border-style',
+  'display',
+  'width',
+  'max-width',
+  'min-width',
+  'height',
+  'max-height',
+  'min-height',
+  'opacity',
+  'overflow',
+  'vertical-align',
+  'white-space',
+  'word-break',
+  'flex',
+  'flex-direction',
+  'flex-wrap',
+  'justify-content',
+  'align-items',
+  'gap',
+  'grid-template-columns',
+  'grid-template-rows',
+  'grid-gap',
+  'list-style',
+  'list-style-type',
+  'box-shadow',
+  'text-shadow',
 ])
 
 const SAFE_TAGS = new Set([
-  'span', 'div', 'p', 'strong', 'em', 'u', 's', 'sub', 'sup', 'br', 'hr',
-  'table', 'thead', 'tbody', 'tr', 'th', 'td', 'ul', 'ol', 'li',
-  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code',
-  'img', 'a', 'small', 'mark', 'abbr', 'details', 'summary',
+  'span',
+  'div',
+  'p',
+  'strong',
+  'em',
+  'u',
+  's',
+  'sub',
+  'sup',
+  'br',
+  'hr',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
+  'ul',
+  'ol',
+  'li',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'blockquote',
+  'pre',
+  'code',
+  'img',
+  'a',
+  'small',
+  'mark',
+  'abbr',
+  'details',
+  'summary',
 ])
 
 function parseCssToReactStyle(css: string): Record<string, string> | null {
@@ -50,7 +123,13 @@ function parseCssToReactStyle(css: string): Record<string, string> | null {
   return Object.keys(style).length > 0 ? style : null
 }
 
-function parseAttributes(attrString: string): { style?: Record<string, string>; className?: string; href?: string; src?: string; alt?: string } {
+function parseAttributes(attrString: string): {
+  style?: Record<string, string>
+  className?: string
+  href?: string
+  src?: string
+  alt?: string
+} {
   const attrs: { style?: Record<string, string>; className?: string; href?: string; src?: string; alt?: string } = {}
   const styleMatch = /style\s*=\s*"([^"]*)"/i.exec(attrString)
   if (styleMatch) {
@@ -71,7 +150,8 @@ function parseAttributes(attrString: string): { style?: Record<string, string>; 
 function renderInlineMarkdown(text: string): ReactNode[] {
   const nodes: ReactNode[] = []
   // Match: markdown links, bold, italic, code, self-closing HTML tags, HTML open/close tag pairs
-  const pattern = /(\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`|<(br|hr)\s*\/?\s*>|<([a-zA-Z][a-zA-Z0-9]*)((?:\s+[a-zA-Z-]+\s*=\s*"[^"]*")*)\s*>([\s\S]*?)<\/\8>)/g
+  const pattern =
+    /(\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`|<(br|hr)\s*\/?\s*>|<([a-zA-Z][a-zA-Z0-9]*)((?:\s+[a-zA-Z-]+\s*=\s*"[^"]*")*)\s*>([\s\S]*?)<\/\8>)/g
   let lastIndex = 0
   let match: RegExpExecArray | null = pattern.exec(text)
 
@@ -130,9 +210,7 @@ function renderInlineMarkdown(text: string): ReactNode[] {
       if (SAFE_TAGS.has(tag)) {
         const attrs = parseAttributes(match[9] || '')
         const children = renderInlineMarkdown(match[10] || '')
-        nodes.push(
-          createElement(tag, { key: `html-${tag}-${match.index}`, ...attrs }, ...children),
-        )
+        nodes.push(createElement(tag, { key: `html-${tag}-${match.index}`, ...attrs }, ...children))
       }
     }
 

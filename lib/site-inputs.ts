@@ -41,7 +41,7 @@ export const siteInputs = {
       },
       breadcrumbs: {
         enabled: true,
-        paths: ['/', '/about-us', '/contact-us', '/products'],
+        paths: ['/', '/about-us', '/contact-us'],
       },
       products: {
         enabled: true,

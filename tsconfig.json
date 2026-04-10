@@ -29,6 +29,7 @@
     "node_modules",
     "src",
     ".output",
+    ".next/dev/types",
     ".tanstack",
     "dist",
     "build",

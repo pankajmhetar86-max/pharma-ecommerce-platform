@@ -2,14 +2,16 @@
 
 import Link from 'next/link'
 import type { Doc } from '@/convex/_generated/dataModel'
+import { toProductImagePath } from '@/lib/image-url'
 
 function productUrl(product: Doc<'products'>, suffix = '') {
-  const categoryPath = product.category.replace(/ /g, '+')
   const id = product.slug ?? product._id
-  return `/category/${categoryPath}/${id}${suffix}`
+  return `/${id}${suffix}`
 }
 
 export function ProductCard({ product }: { product: Doc<'products'> }) {
+  const imageSrc = toProductImagePath(product.slug ?? product._id, product.image)
+
   return (
     <article className="group rx-card flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
       <div className="relative">
@@ -17,7 +19,7 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
           {/* Image area — fixed height so all cards align */}
           <div className="flex h-36 items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
             <img
-              src={product.image}
+              src={imageSrc}
               alt={product.imageAlt ?? product.name}
               className="h-28 w-28 object-contain transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {

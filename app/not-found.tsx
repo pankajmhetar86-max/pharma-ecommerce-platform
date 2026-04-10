@@ -28,9 +28,8 @@ export default function NotFound() {
 
         <div className="mt-6 flex flex-col items-center gap-3">
           <p className="text-sm text-slate-500">
-            Redirecting to home page in{' '}
-            <span className="font-bold text-teal-600 tabular-nums">{countdown}</span>{' '}
-            second{countdown !== 1 ? 's' : ''}…
+            Redirecting to home page in <span className="font-bold text-teal-600 tabular-nums">{countdown}</span> second
+            {countdown !== 1 ? 's' : ''}…
           </p>
 
           <div className="flex gap-1">
@@ -38,9 +37,7 @@ export default function NotFound() {
               <span
                 key={n}
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
-                  countdown >= n
-                    ? 'bg-teal-100 text-teal-700'
-                    : 'bg-slate-100 text-slate-300 line-through'
+                  countdown >= n ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-300 line-through'
                 }`}
               >
                 {n}
