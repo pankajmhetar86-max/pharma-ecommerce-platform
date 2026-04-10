@@ -19,6 +19,10 @@ type DosagePricing = {
   packages: PackageOption[]
 }
 
+function duplicatePackageMessage(dosage: string, pillCount: number) {
+  return `Package quantity ${pillCount} already exists for dosage "${dosage}".`
+}
+
 export type ProductFormData = {
   name: string
   genericName: string
@@ -40,6 +44,8 @@ type Props = {
   initial?: Doc<'products'>
   onSubmit: (data: ProductFormData) => Promise<void>
   onClose: () => void
+  /** Render as full page instead of a modal overlay */
+  fullPage?: boolean
 }
 
 const EMPTY_FORM: ProductFormData = {
@@ -87,7 +93,7 @@ function matrixFromDoc(doc: Doc<'products'>): DosagePricing[] {
   return []
 }
 
-export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
+export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props) {
   const [form, setForm] = useState<ProductFormData>(
     initial
       ? {
@@ -114,9 +120,12 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [previewSrc, setPreviewSrc] = useState(initial?.image ?? '')
+  const [previewLoadError, setPreviewLoadError] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [matrixOpen, setMatrixOpen] = useState(true)
   const [newDosageForMatrix, setNewDosageForMatrix] = useState('')
+  const [selectedDosage, setSelectedDosage] = useState('')
+  const [selectedPackage, setSelectedPackage] = useState('')
   const [showNewCategory, setShowNewCategory] = useState(false)
   const [newCategoryInput, setNewCategoryInput] = useState('')
   const [creatingCategory, setCreatingCategory] = useState(false)
@@ -147,14 +156,52 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     nameRef.current?.focus()
   }, [])
 
+  useEffect(() => {
+    if (form.pricingMatrix.length === 0) {
+      setSelectedDosage('')
+      return
+    }
+
+    if (!form.pricingMatrix.some((entry) => entry.dosage === selectedDosage)) {
+      setSelectedDosage(form.pricingMatrix[0].dosage)
+    }
+  }, [form.pricingMatrix, selectedDosage])
+
+  useEffect(() => {
+    const currentDosageEntry = form.pricingMatrix.find((entry) => entry.dosage === selectedDosage)
+    if (!currentDosageEntry || currentDosageEntry.packages.length === 0) {
+      setSelectedPackage('')
+      return
+    }
+
+    if (!currentDosageEntry.packages.some((_, index) => String(index) === selectedPackage)) {
+      setSelectedPackage('0')
+    }
+  }, [form.pricingMatrix, selectedDosage, selectedPackage])
+
   const set = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
+
+  const readFileAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
+      reader.onerror = () => reject(new Error('Could not read image for preview'))
+      reader.readAsDataURL(file)
+    })
 
   // Pricing matrix helpers
   const addDosagePricing = (dosage: string) => {
     const d = dosage.trim()
-    if (!d || form.pricingMatrix.some((m) => m.dosage === d)) return
+    if (!d) return
+    if (form.pricingMatrix.some((m) => m.dosage === d)) {
+      setError(`Dosage "${d}" already exists.`)
+      return
+    }
+    setError('')
     set('pricingMatrix', [...form.pricingMatrix, { dosage: d, packages: [] }])
+    setSelectedDosage(d)
+    setSelectedPackage('')
     setNewDosageForMatrix('')
   }
 
@@ -166,6 +213,8 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   }
 
   const addPackageToDosage = (dosageIdx: number) => {
+    const nextPackageIdx = form.pricingMatrix[dosageIdx]?.packages.length ?? 0
+    setError('')
     const updated = form.pricingMatrix.map((d, i) =>
       i === dosageIdx
         ? {
@@ -175,6 +224,10 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
         : d,
     )
     set('pricingMatrix', updated)
+    if (form.pricingMatrix[dosageIdx]) {
+      setSelectedDosage(form.pricingMatrix[dosageIdx].dosage)
+      setSelectedPackage(String(nextPackageIdx))
+    }
   }
 
   const removePackage = (dosageIdx: number, pkgIdx: number) => {
@@ -185,6 +238,21 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   }
 
   const updatePackage = (dosageIdx: number, pkgIdx: number, field: keyof PackageOption, value: string) => {
+    const dosageEntry = form.pricingMatrix[dosageIdx]
+    if (field === 'pillCount' && dosageEntry) {
+      const pillCount = Number(value)
+      if (pillCount > 0) {
+        const duplicateExists = dosageEntry.packages.some(
+          (pkg, index) => index !== pkgIdx && Number(pkg.pillCount) === pillCount,
+        )
+        if (duplicateExists) {
+          setError(duplicatePackageMessage(dosageEntry.dosage, pillCount))
+          return
+        }
+      }
+    }
+
+    setError('')
     const updated = form.pricingMatrix.map((d, i) =>
       i === dosageIdx
         ? {
@@ -202,10 +270,12 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
       return
     }
     setUploadError('')
-    setUploading(true)
-    const blobUrl = URL.createObjectURL(file)
-    setPreviewSrc(blobUrl)
+    setPreviewLoadError(false)
     try {
+      const dataUrl = await readFileAsDataUrl(file)
+      setPreviewSrc(dataUrl)
+      setUploading(true)
+
       const uploadUrl = await generateUploadUrl()
       const response = await fetch(uploadUrl, {
         method: 'POST',
@@ -218,10 +288,8 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
       if (!cdnUrl) throw new Error('Could not resolve image URL')
       set('image', cdnUrl)
       setPreviewSrc(cdnUrl)
-      URL.revokeObjectURL(blobUrl)
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Try again.')
-      setPreviewSrc('')
       set('image', '')
     } finally {
       setUploading(false)
@@ -241,6 +309,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   }
 
   const handleUrlChange = (url: string) => {
+    setPreviewLoadError(false)
     set('image', url)
     setPreviewSrc(url)
   }
@@ -250,9 +319,23 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
     if (!form.name.trim()) return setError('Brand name is required.')
     if (!form.genericName.trim()) return setError('Generic name is required.')
     if (!form.category) return setError('Category is required.')
+    const seenDosages = new Set<string>()
     for (const dosagePricing of form.pricingMatrix) {
+      const dosageName = dosagePricing.dosage.trim()
+      if (!dosageName) return setError('Each pricing section needs a dosage.')
+      if (seenDosages.has(dosageName)) return setError(`Dosage "${dosageName}" already exists.`)
+      seenDosages.add(dosageName)
+      if (dosagePricing.packages.length === 0) {
+        return setError(`Add at least one package price for ${dosageName || 'each dosage'}.`)
+      }
+      const seenPillCounts = new Set<number>()
       for (const pkg of dosagePricing.packages) {
         if (Number(pkg.price) <= 0) return setError('Package price must be greater than 0.')
+        const pillCount = Number(pkg.pillCount)
+        if (pillCount > 0 && seenPillCounts.has(pillCount)) {
+          return setError(duplicatePackageMessage(dosageName, pillCount))
+        }
+        seenPillCounts.add(pillCount)
       }
     }
     setSaving(true)
@@ -295,12 +378,40 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
   const inputClass =
     'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none ring-sky-200 focus:border-sky-400 focus:ring-2 bg-white'
   const labelClass = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500'
+  const selectedDosageIdx = form.pricingMatrix.findIndex((entry) => entry.dosage === selectedDosage)
+  const activeDosageIdx = selectedDosageIdx >= 0 ? selectedDosageIdx : 0
+  const activeDosageEntry = form.pricingMatrix[activeDosageIdx]
+  const selectedPackageIdx =
+    selectedPackage !== '' && Number.isInteger(Number(selectedPackage)) ? Number(selectedPackage) : -1
+  const activePackageIdx =
+    activeDosageEntry && selectedPackageIdx >= 0 && selectedPackageIdx < activeDosageEntry.packages.length
+      ? selectedPackageIdx
+      : 0
+  const activePackage = activeDosageEntry?.packages[activePackageIdx]
+  const pricingError =
+    error.includes('Dosage "') ||
+    error.includes('pricing section') ||
+    error.includes('package price') ||
+    error.includes('Package quantity') ||
+    error.includes('Add at least one package price')
+      ? error
+      : ''
+
+  const wrapperClass = fullPage
+    ? 'min-h-screen bg-slate-50'
+    : 'fixed inset-0 z-50 flex items-stretch justify-center bg-black/40 p-2 backdrop-blur-sm sm:p-4'
+
+  const containerClass = fullPage
+    ? 'mx-auto flex min-h-screen w-full flex-col bg-white'
+    : 'relative flex h-full max-h-[96vh] w-full max-w-6xl flex-col rounded-2xl bg-white shadow-2xl'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl">
+    <div className={wrapperClass}>
+      <div className={containerClass}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div
+          className={`sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4 ${fullPage ? 'shadow-sm' : ''}`}
+        >
           <h2 className="text-lg font-bold text-slate-900">{initial ? 'Edit Medicine' : 'Add New Medicine'}</h2>
           <button
             type="button"
@@ -312,8 +423,10 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div
+          className={`flex-1 overflow-y-auto px-6 py-5 ${fullPage ? 'mx-auto w-full max-w-7xl lg:px-12' : 'lg:px-8'}`}
+        >
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 xl:gap-5">
             {/* Brand name */}
             <div>
               <label className={labelClass}>Brand Name *</label>
@@ -484,7 +597,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             </div>
 
             {/* Brief Description */}
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 xl:col-span-3">
               <label className={labelClass}>Brief Description</label>
               <p className="mb-1.5 text-xs text-slate-400">Shown on the product detail page header (2–3 sentences).</p>
               <textarea
@@ -497,7 +610,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             </div>
 
             {/* Full Product Description */}
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 xl:col-span-3">
               <label className={labelClass}>Full Product Description</label>
               <p className="mb-1.5 text-xs text-slate-400">
                 Shown in the collapsible tab at the bottom of the product page. Supports safe markdown: headings (`#` to
@@ -513,7 +626,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             </div>
 
             {/* Pricing Matrix */}
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 xl:col-span-3">
               <button
                 type="button"
                 onClick={() => setMatrixOpen((v) => !v)}
@@ -562,14 +675,56 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                     </button>
                   </div>
 
-                  {form.pricingMatrix.map((dosageEntry, dosageIdx) => (
-                    <div key={dosageEntry.dosage} className="rounded-lg border border-slate-200 bg-white">
-                      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
-                        <span className="text-sm font-bold text-slate-800">{dosageEntry.dosage}</span>
+                  {pricingError && (
+                    <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">{pricingError}</p>
+                  )}
+
+                  {form.pricingMatrix.length > 0 && activeDosageEntry && (
+                    <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className={labelClass}>Selected Dosage</label>
+                          <select
+                            className={inputClass}
+                            value={activeDosageEntry.dosage}
+                            onChange={(e) => setSelectedDosage(e.target.value)}
+                          >
+                            {form.pricingMatrix.map((entry) => (
+                              <option key={entry.dosage} value={entry.dosage}>
+                                {entry.dosage}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelClass}>Selected Package</label>
+                          <select
+                            className={inputClass}
+                            value={activeDosageEntry.packages.length > 0 ? String(activePackageIdx) : ''}
+                            onChange={(e) => setSelectedPackage(e.target.value)}
+                            disabled={activeDosageEntry.packages.length === 0}
+                          >
+                            {activeDosageEntry.packages.length === 0 ? (
+                              <option value="">No packages yet</option>
+                            ) : (
+                              activeDosageEntry.packages.map((pkg, pkgIdx) => (
+                                <option key={`${activeDosageEntry.dosage}-${pkgIdx}`} value={String(pkgIdx)}>
+                                  {pkg.pillCount
+                                    ? `${pkg.pillCount} ${form.unit}${pkg.pillCount === '1' ? '' : 's'}`
+                                    : `Package ${pkgIdx + 1}`}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                        <p className="text-sm font-semibold text-slate-800">{activeDosageEntry.dosage}</p>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => addPackageToDosage(dosageIdx)}
+                            onClick={() => addPackageToDosage(activeDosageIdx)}
                             className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
                           >
                             <Plus className="h-3 w-3" />
@@ -577,7 +732,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => removeDosagePricing(dosageEntry.dosage)}
+                            onClick={() => removeDosagePricing(activeDosageEntry.dosage)}
                             className="text-slate-400 hover:text-red-500"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -585,89 +740,93 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                         </div>
                       </div>
 
-                      {dosageEntry.packages.length === 0 ? (
-                        <p className="px-4 py-3 text-xs text-slate-400">
-                          No packages yet. Click "Add Package" to add one.
-                        </p>
+                      {!activePackage ? (
+                        <p className="text-xs text-slate-400">No packages yet. Click "Add Package" to add one.</p>
                       ) : (
-                        <div className="divide-y divide-slate-100">
-                          {dosageEntry.packages.map((pkg, pkgIdx) => (
-                            <div key={pkgIdx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-4 py-3">
-                              <div>
-                                <label className="mb-1 block text-xs text-slate-400">Qty ({form.unit}s)</label>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  className={inputClass}
-                                  placeholder="e.g. 30"
-                                  value={pkg.pillCount}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'pillCount', e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label className="mb-1 block text-xs text-slate-400">Original $</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={0.01}
-                                  className={inputClass}
-                                  placeholder="34.57"
-                                  value={pkg.originalPrice}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'originalPrice', e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label className="mb-1 block text-xs text-slate-400">Sale $</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={0.01}
-                                  className={inputClass}
-                                  placeholder="18.99"
-                                  value={pkg.price}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'price', e.target.value)}
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removePackage(dosageIdx, pkgIdx)}
-                                className="mt-5 text-slate-400 hover:text-red-500"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                              <div>
-                                <label className="mb-1 block text-xs text-slate-400">Expiration Date</label>
-                                <input
-                                  type="date"
-                                  className={inputClass}
-                                  value={pkg.expiryDate}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'expiryDate', e.target.value)}
-                                />
-                              </div>
-                              <div className="col-span-2">
-                                <label className="mb-1 block text-xs text-slate-400">
-                                  Benefits (comma-separated, e.g. "4 free ED pills, Package delivery insurance")
-                                </label>
-                                <input
-                                  type="text"
-                                  className={inputClass}
-                                  placeholder="4 free ED pills, Package delivery insurance, Next orders 10% discount"
-                                  value={pkg.benefits}
-                                  onChange={(e) => updatePackage(dosageIdx, pkgIdx, 'benefits', e.target.value)}
-                                />
-                              </div>
-                            </div>
-                          ))}
+                        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-400">Qty ({form.unit}s)</label>
+                            <input
+                              type="number"
+                              min={1}
+                              className={inputClass}
+                              placeholder="e.g. 30"
+                              value={activePackage.pillCount}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'pillCount', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-400">Original $</label>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              className={inputClass}
+                              placeholder="34.57"
+                              value={activePackage.originalPrice}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'originalPrice', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-400">Sale $</label>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              className={inputClass}
+                              placeholder="18.99"
+                              value={activePackage.price}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'price', e.target.value)
+                              }
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removePackage(activeDosageIdx, activePackageIdx)}
+                            className="mt-5 text-slate-400 hover:text-red-500"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-400">Expiration Date</label>
+                            <input
+                              type="date"
+                              className={inputClass}
+                              value={activePackage.expiryDate}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'expiryDate', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="mb-1 block text-xs text-slate-400">
+                              Benefits (comma-separated, e.g. "4 free ED pills, Package delivery insurance")
+                            </label>
+                            <input
+                              type="text"
+                              className={inputClass}
+                              placeholder="4 free ED pills, Package delivery insurance, Next orders 10% discount"
+                              value={activePackage.benefits}
+                              onChange={(e) =>
+                                updatePackage(activeDosageIdx, activePackageIdx, 'benefits', e.target.value)
+                              }
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
 
             {/* Image */}
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 xl:col-span-3">
               <label className={labelClass}>Product Image</label>
 
               <div className="mb-3 flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
@@ -763,17 +922,20 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                               <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
                             </div>
                           )}
-                          <img
-                            src={previewSrc}
-                            alt={form.imageAlt || 'Preview'}
-                            className="h-24 w-24 object-contain"
-                            onError={(e) => {
-                              const el = e.currentTarget as HTMLImageElement
-                              el.style.display = 'none'
-                              el.nextElementSibling?.classList.remove('hidden')
-                            }}
-                          />
-                          <div className="hidden flex-col items-center gap-1 text-slate-300">
+                          {previewSrc ? (
+                            <img
+                              src={previewSrc}
+                              alt={form.imageAlt || 'Preview'}
+                              className={previewLoadError ? 'hidden' : 'h-24 w-24 object-contain'}
+                              onLoad={() => setPreviewLoadError(false)}
+                              onError={() => setPreviewLoadError(imageMode === 'url')}
+                            />
+                          ) : null}
+                          <div
+                            className={`flex-col items-center gap-1 text-slate-300 ${
+                              previewLoadError && imageMode === 'url' ? 'flex' : 'hidden'
+                            }`}
+                          >
                             <ImageOff className="h-8 w-8" />
                             <span className="text-xs">Bad URL</span>
                           </div>
@@ -804,7 +966,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             </div>
 
             {/* In Stock toggle */}
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 sm:col-span-2">
+            <div className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 sm:col-span-2 xl:col-span-3">
               <button
                 type="button"
                 onClick={() => set('inStock', !form.inStock)}
@@ -823,7 +985,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             </div>
 
             {/* SEO section */}
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 xl:col-span-3">
               <div className="mb-3 border-t border-slate-100 pt-4">
                 <h3 className="text-sm font-bold text-slate-800">URL &amp; SEO</h3>
                 <p className="mt-0.5 text-xs text-slate-500">
@@ -894,11 +1056,13 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
             </div>
           </div>
 
-          {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">{error}</p>}
+          {error && !pricingError && (
+            <p className="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">{error}</p>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
+        <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-white px-6 py-4">
           <button
             type="button"
             onClick={onClose}

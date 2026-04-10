@@ -102,7 +102,9 @@ export function SiteFooter() {
         {/* Divider */}
         <div className="mt-10 border-t border-slate-800 pt-6">
           <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
-            <p className="text-xs text-slate-500">© {new Date().getFullYear()} {SITE_NAME}. All rights reserved.</p>
+            <p className="text-xs text-slate-500">
+              © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
+            </p>
             <div className="flex items-center gap-1.5 text-xs text-slate-600">
               <Shield className="h-3 w-3 text-teal-600" />
               Secure & encrypted transactions

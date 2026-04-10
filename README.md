@@ -4,13 +4,11 @@
 
 `app/(shop)/.../page.tsx` - visit these respective pages to update
 
-
 ## Product Description Markdown
 
 The `Full Product Description` field in the admin product form now supports a safe markdown subset.
 
 Supported syntax:
-
 
 - `#` through `######` for headings
 - Plain paragraphs
@@ -55,9 +53,7 @@ You can embed HTML tags with `style` and `class` attributes for richer formattin
   This is a green info box
 </div>
 
-<p style="font-size: 18px; text-align: center; color: #0f766e">
-  Centered teal text at 18px
-</p>
+<p style="font-size: 18px; text-align: center; color: #0f766e">Centered teal text at 18px</p>
 ```
 
 Mix markdown and HTML freely:
