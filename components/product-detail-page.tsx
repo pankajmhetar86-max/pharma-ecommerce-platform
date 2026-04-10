@@ -3,23 +3,11 @@ import { ChevronLeft } from 'lucide-react'
 import type { Doc } from '@/convex/_generated/dataModel'
 import { toProductImagePath } from '@/lib/image-url'
 import { renderMarkdownContent } from '@/lib/markdown'
-import { formatPrice } from '@/lib/utils'
 import { ProductPurchasePanel } from './product-purchase-panel'
 
 type ProductDetailPageProps = {
   product: Doc<'products'>
   initialDosage?: string
-}
-
-function formatExpiryDate(expiryDate?: string) {
-  if (!expiryDate) return null
-
-  const expiry = new Date(`${expiryDate}T00:00:00`)
-  if (Number.isNaN(expiry.valueOf())) {
-    return expiryDate
-  }
-
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(expiry)
 }
 
 export function ProductDetailPage({ product, initialDosage }: ProductDetailPageProps) {
@@ -69,78 +57,8 @@ export function ProductDetailPage({ product, initialDosage }: ProductDetailPageP
         </div>
       </section>
 
-      {product.pricingMatrix?.length ? (
-        <section className="rx-card overflow-hidden">
-          <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-4">
-            <h2 className="text-base font-bold text-slate-900">Available Packages</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              All dosage and quantity options are rendered in the initial HTML.
-            </p>
-          </div>
-
-          <div className="space-y-4 p-4">
-            {product.pricingMatrix.map((dosage) => (
-              <section key={dosage.dosage} className="rounded-xl border border-slate-100 bg-white p-4">
-                <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">{dosage.dosage}</h3>
-                <div className="mt-3 overflow-x-auto">
-                  <table className="min-w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-xs uppercase tracking-[0.16em] text-slate-400">
-                        <th className="px-0 py-2 pr-4 font-semibold">Quantity</th>
-                        <th className="px-0 py-2 pr-4 font-semibold">Price</th>
-                        <th className="px-0 py-2 pr-4 font-semibold">Per Unit</th>
-                        <th className="px-0 py-2 pr-4 font-semibold">Savings</th>
-                        <th className="px-0 py-2 font-semibold">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dosage.packages.map((pkg) => {
-                        const notes = [
-                          formatExpiryDate(pkg.expiryDate) ? `Expiry: ${formatExpiryDate(pkg.expiryDate)}` : null,
-                          pkg.benefits?.length ? pkg.benefits.join(' • ') : null,
-                        ]
-                          .filter(Boolean)
-                          .join(' • ')
-
-                        return (
-                          <tr
-                            key={`${dosage.dosage}-${pkg.pillCount}`}
-                            className="border-b border-slate-100 last:border-b-0"
-                          >
-                            <td className="px-0 py-3 pr-4 font-semibold text-slate-900">
-                              {pkg.pillCount} {product.unit}
-                              {pkg.pillCount === 1 ? '' : 's'}
-                            </td>
-                            <td className="px-0 py-3 pr-4 text-slate-900">
-                              {pkg.originalPrice > pkg.price ? (
-                                <span className="mr-2 text-xs text-slate-400 line-through">
-                                  {formatPrice(pkg.originalPrice)}
-                                </span>
-                              ) : null}
-                              <span className="font-semibold">{formatPrice(pkg.price)}</span>
-                            </td>
-                            <td className="px-0 py-3 pr-4 text-slate-600">{formatPrice(pkg.price / pkg.pillCount)}</td>
-                            <td className="px-0 py-3 pr-4 text-slate-600">
-                              {pkg.originalPrice > pkg.price ? formatPrice(pkg.originalPrice - pkg.price) : '—'}
-                            </td>
-                            <td className="px-0 py-3 text-slate-600">{notes || '—'}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       <section className="rx-card overflow-hidden">
-        <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-4">
-          <h2 className="text-base font-bold text-slate-900">Order This Product</h2>
-        </div>
-        <div className="p-4">
+        <div className="p-4 md:p-5">
           <ProductPurchasePanel
             productId={product._id}
             productSlug={product.slug}
