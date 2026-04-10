@@ -6,9 +6,7 @@ import { ProductDetailContent } from '@/components/product-detail-content'
 import { buildProductDetailSchema } from '@/lib/home-schema'
 import { toAbsoluteProductImageUrl } from '@/lib/image-url'
 
-const getProduct = cache((identifier: string) =>
-  fetchQuery(api.products.getBySlugOrId, { identifier })
-)
+const getProduct = cache((identifier: string) => fetchQuery(api.products.getBySlugOrId, { identifier }))
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

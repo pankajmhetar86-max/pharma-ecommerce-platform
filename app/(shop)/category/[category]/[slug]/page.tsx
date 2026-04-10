@@ -5,9 +5,7 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { toAbsoluteProductImageUrl } from '@/lib/image-url'
 
-const getProduct = cache((identifier: string) =>
-  fetchQuery(api.products.getBySlugOrId, { identifier })
-)
+const getProduct = cache((identifier: string) => fetchQuery(api.products.getBySlugOrId, { identifier }))
 
 export async function generateMetadata({
   params,

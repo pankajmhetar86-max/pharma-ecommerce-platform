@@ -132,6 +132,7 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
 
   const nameRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const objectPreviewUrlRef = useRef<string | null>(null)
 
   const generateUploadUrl = useMutation(api.admin.generateUploadUrl)
   const getUploadedImageUrl = useMutation(api.admin.getUploadedImageUrl)
@@ -150,6 +151,14 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
 
   useEffect(() => {
     nameRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (objectPreviewUrlRef.current) {
+        URL.revokeObjectURL(objectPreviewUrlRef.current)
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -177,6 +186,13 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
 
   const set = <K extends keyof ProductFormData>(key: K, value: ProductFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
+
+  const replaceObjectPreviewUrl = (nextUrl: string | null) => {
+    if (objectPreviewUrlRef.current) {
+      URL.revokeObjectURL(objectPreviewUrlRef.current)
+    }
+    objectPreviewUrlRef.current = nextUrl
+  }
 
   // Pricing matrix helpers
   const addDosagePricing = (dosage: string) => {
@@ -236,11 +252,12 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
       setUploadError('Please select an image file (JPG, PNG, WebP, etc.)')
       return
     }
-    setUploadError('')
-    setUploading(true)
-    setPreviewLoadError(false)
     const blobUrl = URL.createObjectURL(file)
+    replaceObjectPreviewUrl(blobUrl)
+    setUploadError('')
+    setPreviewLoadError(false)
     setPreviewSrc(blobUrl)
+    setUploading(true)
     try {
       const uploadUrl = await generateUploadUrl()
       const response = await fetch(uploadUrl, {
@@ -255,7 +272,6 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
       set('image', cdnUrl)
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Try again.')
-      setPreviewSrc('')
       set('image', '')
     } finally {
       setUploading(false)
@@ -275,6 +291,7 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
   }
 
   const handleUrlChange = (url: string) => {
+    replaceObjectPreviewUrl(null)
     setPreviewLoadError(false)
     set('image', url)
     setPreviewSrc(url)
@@ -357,7 +374,9 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
     <div className={wrapperClass}>
       <div className={containerClass}>
         {/* Header */}
-        <div className={`sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4 ${fullPage ? 'shadow-sm' : ''}`}>
+        <div
+          className={`sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4 ${fullPage ? 'shadow-sm' : ''}`}
+        >
           <h2 className="text-lg font-bold text-slate-900">{initial ? 'Edit Medicine' : 'Add New Medicine'}</h2>
           <button
             type="button"
@@ -369,7 +388,9 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
         </div>
 
         {/* Scrollable body */}
-        <div className={`flex-1 overflow-y-auto px-6 py-5 ${fullPage ? 'mx-auto w-full max-w-7xl lg:px-12' : 'lg:px-8'}`}>
+        <div
+          className={`flex-1 overflow-y-auto px-6 py-5 ${fullPage ? 'mx-auto w-full max-w-7xl lg:px-12' : 'lg:px-8'}`}
+        >
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 xl:gap-5">
             {/* Brand name */}
             <div>
@@ -862,15 +883,19 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
                               <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
                             </div>
                           )}
-                          <img
-                            src={previewSrc}
-                            alt={form.imageAlt || 'Preview'}
-                            className={previewLoadError ? 'hidden' : 'h-24 w-24 object-contain'}
-                            onLoad={() => setPreviewLoadError(false)}
-                            onError={() => setPreviewLoadError(true)}
-                          />
+                          {previewSrc ? (
+                            <img
+                              src={previewSrc}
+                              alt={form.imageAlt || 'Preview'}
+                              className={previewLoadError ? 'hidden' : 'h-24 w-24 object-contain'}
+                              onLoad={() => setPreviewLoadError(false)}
+                              onError={() => setPreviewLoadError(imageMode === 'url')}
+                            />
+                          ) : null}
                           <div
-                            className={`flex-col items-center gap-1 text-slate-300 ${previewLoadError ? 'flex' : 'hidden'}`}
+                            className={`flex-col items-center gap-1 text-slate-300 ${
+                              previewLoadError && imageMode === 'url' ? 'flex' : 'hidden'
+                            }`}
                           >
                             <ImageOff className="h-8 w-8" />
                             <span className="text-xs">Bad URL</span>
