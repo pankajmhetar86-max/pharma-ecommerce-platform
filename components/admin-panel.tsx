@@ -33,7 +33,6 @@ import {
 import { api } from '@/convex/_generated/api'
 import type { Doc, Id } from '@/convex/_generated/dataModel'
 import { toProductImagePath } from '@/lib/image-url'
-import { AdminProductForm, type ProductFormData } from './admin-product-form'
 import { formatPrice } from '@/lib/utils'
 
 type Tab = 'products' | 'orders' | 'slider' | 'categories' | 'users'
@@ -155,8 +154,6 @@ export function AdminPanel() {
 function ProductsTab() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [formOpen, setFormOpen] = useState(false)
-  const [editProduct, setEditProduct] = useState<Doc<'products'> | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Doc<'products'> | null>(null)
   const [deleting, setDeleting] = useState(false)
 
@@ -164,8 +161,6 @@ function ProductsTab() {
   const backfillSlugs = useMutation(api.admin.backfillSlugs)
   const backfillSearchText = useMutation(api.admin.backfillSearchText)
   const backfillRanRef = useRef(false)
-  const createProduct = useMutation(api.admin.createProduct)
-  const updateProduct = useMutation(api.admin.updateProduct)
   const deleteProduct = useMutation(api.admin.deleteProduct)
   const toggleStock = useMutation(api.admin.toggleStock)
   const toggleVisibility = useMutation(api.admin.toggleVisibility)
@@ -200,47 +195,6 @@ function ProductsTab() {
   const inStockCount = products?.filter((p) => p.inStock).length ?? 0
   const hiddenCount = products?.filter((p) => p.isVisible === false).length ?? 0
 
-  const normalizeFormData = (data: ProductFormData) => {
-    const pricingMatrix = data.pricingMatrix
-      .filter((d) => d.dosage.trim() && d.packages.length > 0)
-      .map((d) => ({
-        dosage: d.dosage,
-        packages: d.packages
-          .filter((p) => p.pillCount && p.price)
-          .map((p) => ({
-            pillCount: parseFloat(p.pillCount) || 0,
-            originalPrice: parseFloat(p.originalPrice) || 0,
-            price: parseFloat(p.price) || 0,
-            benefits: p.benefits
-              ? p.benefits
-                  .split(',')
-                  .map((b) => b.trim())
-                  .filter(Boolean)
-              : [],
-            expiryDate: p.expiryDate.trim() || undefined,
-          })),
-      }))
-      .filter((d) => d.packages.length > 0)
-    return {
-      ...data,
-      dosageOptions: pricingMatrix.map((d) => d.dosage),
-      pricingMatrix: pricingMatrix.length > 0 ? pricingMatrix : undefined,
-      fullDescription: data.fullDescription || undefined,
-      slug: data.slug.trim() || undefined,
-    }
-  }
-
-  const handleCreate = async (data: ProductFormData) => {
-    await createProduct(normalizeFormData(data))
-    setFormOpen(false)
-  }
-
-  const handleUpdate = async (data: ProductFormData) => {
-    if (!editProduct) return
-    await updateProduct({ id: editProduct._id, ...normalizeFormData(data) })
-    setEditProduct(null)
-  }
-
   const handleDelete = async () => {
     if (!deleteTarget) return
     setDeleting(true)
@@ -272,14 +226,13 @@ function ProductsTab() {
           />
         </div>
         {products === undefined && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
-        <button
-          type="button"
-          onClick={() => setFormOpen(true)}
+        <Link
+          href="/admin/products/new"
           className="ml-auto inline-flex items-center gap-2 rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 active:scale-95"
         >
           <Plus className="h-4 w-4" />
           Add Medicine
-        </button>
+        </Link>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -310,7 +263,8 @@ function ProductsTab() {
                   <ProductRow
                     key={p._id}
                     product={p}
-                    onEdit={() => setEditProduct(p)}
+                    onEdit={() => void 0}
+                    editHref={`/admin/products/${p._id}/edit`}
                     onDelete={() => setDeleteTarget(p)}
                     onToggleStock={() => void toggleStock({ id: p._id, inStock: !p.inStock })}
                     onToggleVisibility={() => void toggleVisibility({ id: p._id, isVisible: p.isVisible === false })}
@@ -322,11 +276,6 @@ function ProductsTab() {
           </div>
         )}
       </div>
-
-      {formOpen && <AdminProductForm onSubmit={handleCreate} onClose={() => setFormOpen(false)} />}
-      {editProduct && (
-        <AdminProductForm initial={editProduct} onSubmit={handleUpdate} onClose={() => setEditProduct(null)} />
-      )}
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
@@ -368,6 +317,7 @@ function ProductsTab() {
 type RowProps = {
   product: Doc<'products'>
   onEdit: () => void
+  editHref?: string
   onDelete: () => void
   onToggleStock: () => void
   onToggleVisibility: () => void
@@ -388,7 +338,7 @@ function getLowestDisplayPrice(product: Doc<'products'>) {
   return product.price ?? null
 }
 
-function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibility, onToggleRecommended }: RowProps) {
+function ProductRow({ product, editHref, onDelete, onToggleStock, onToggleVisibility, onToggleRecommended }: RowProps) {
   const visible = product.isVisible !== false
   const lowestPrice = getLowestDisplayPrice(product)
 
@@ -465,14 +415,13 @@ function ProductRow({ product, onEdit, onDelete, onToggleStock, onToggleVisibili
       </td>
       <td className="px-4 py-3 text-right">
         <div className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            type="button"
-            onClick={onEdit}
+          <Link
+            href={editHref ?? '#'}
             title="Edit"
             className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-sky-50 hover:text-sky-700"
           >
             <Pencil className="h-4 w-4" />
-          </button>
+          </Link>
           <button
             type="button"
             onClick={onDelete}
