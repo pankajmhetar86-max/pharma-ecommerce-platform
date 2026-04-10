@@ -5,7 +5,6 @@ import { X, Plus, Upload, Link as LinkIcon, Loader2, ImageOff, ChevronDown, Chev
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import type { Doc } from '@/convex/_generated/dataModel'
-import { toPublicImagePath } from '@/lib/image-url'
 
 type PackageOption = {
   pillCount: string
@@ -856,7 +855,7 @@ export function AdminProductForm({ initial, onSubmit, onClose }: Props) {
                             </div>
                           )}
                           <img
-                            src={toPublicImagePath(previewSrc)}
+                            src={previewSrc}
                             alt={form.imageAlt || 'Preview'}
                             className={previewLoadError ? 'hidden' : 'h-24 w-24 object-contain'}
                             onLoad={() => setPreviewLoadError(false)}

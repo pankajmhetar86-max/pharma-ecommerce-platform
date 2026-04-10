@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useMutation, useQuery } from 'convex/react'
 import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { api } from '@/convex/_generated/api'
-import { toPublicImagePath } from '@/lib/image-url'
+import { toProductImagePath } from '@/lib/image-url'
 import { formatPrice } from '@/lib/utils'
 
 export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -76,7 +76,7 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                   <li key={itemKey} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
                     <div className="flex gap-3">
                       <img
-                        src={toPublicImagePath(item.image)}
+                        src={toProductImagePath(item.slug ?? item.productId, item.image)}
                         alt={item.name}
                         className="h-12 w-12 shrink-0 rounded-lg border border-slate-100 bg-white object-contain p-1"
                       />

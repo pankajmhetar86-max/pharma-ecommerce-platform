@@ -32,7 +32,7 @@ import {
 } from 'lucide-react'
 import { api } from '@/convex/_generated/api'
 import type { Doc, Id } from '@/convex/_generated/dataModel'
-import { toProductImagePath, toPublicImagePath } from '@/lib/image-url'
+import { toProductImagePath } from '@/lib/image-url'
 import { AdminProductForm, type ProductFormData } from './admin-product-form'
 import { formatPrice } from '@/lib/utils'
 
@@ -1454,7 +1454,7 @@ function OrderDetailModal({
                         <div className="flex items-center gap-2">
                           {item.image && (
                             <img
-                              src={toPublicImagePath(item.image)}
+                              src={item.image}
                               alt={item.name}
                               className="h-8 w-8 shrink-0 rounded-md border border-slate-100 object-cover"
                             />

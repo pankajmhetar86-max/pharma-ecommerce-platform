@@ -58,6 +58,7 @@ export const getMyCart = query({
 
     const hydratedItems: Array<{
       productId: Id<'products'>
+      slug: string | undefined
       name: string
       genericName: string
       dosage?: string
@@ -84,6 +85,7 @@ export const getMyCart = query({
       const unit = item.pillCount ? `package (${item.pillCount} ${product.unit}s)` : product.unit
       hydratedItems.push({
         productId: product._id,
+        slug: product.slug,
         name: product.name,
         genericName: product.genericName,
         dosage: item.dosage,
