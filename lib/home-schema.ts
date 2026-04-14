@@ -52,7 +52,7 @@ function buildProductOfferEntries(product: HomeProduct, siteUrl: string) {
         'price': pkg.price.toFixed(2),
         'availability': product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
         'priceValidUntil': siteInputs.home.schema.products.priceValidUntil,
-        'url': dosage.dosage ? `${baseUrl}?dosage=${encodeURIComponent(dosage.dosage)}` : baseUrl,
+        'url': baseUrl,
         'itemCondition': 'https://schema.org/NewCondition',
         'sku': `${identifier}-${dosage.dosage}-${pkg.pillCount}`,
         'name': `${product.genericName} ${dosage.dosage} - ${pkg.pillCount} ${product.unit}${pkg.pillCount === 1 ? '' : 's'}`,
