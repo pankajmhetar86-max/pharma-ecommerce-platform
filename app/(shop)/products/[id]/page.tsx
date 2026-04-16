@@ -52,11 +52,7 @@ export default async function ProductDetailByIdPage({ params }: { params: Promis
         <section className="rx-card overflow-hidden">
           <div className="flex flex-wrap items-start gap-6 p-5 md:p-6">
             <div className="shrink-0 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 p-5">
-              <img
-                src={imageSrc}
-                alt={product.imageAlt ?? product.name}
-                className="h-36 w-36 object-contain"
-              />
+              <img src={imageSrc} alt={product.imageAlt ?? product.name} className="h-36 w-36 object-contain" />
             </div>
 
             <div className="min-w-0 flex-1">
@@ -70,9 +66,7 @@ export default async function ProductDetailByIdPage({ params }: { params: Promis
               <h1 className="mt-2 text-xl font-extrabold text-slate-900 md:text-2xl lg:text-3xl">
                 {product.genericName}
               </h1>
-              {product.name && (
-                <p className="mt-0.5 text-sm text-slate-400">Brand Name: {product.name}</p>
-              )}
+              {product.name && <p className="mt-0.5 text-sm text-slate-400">Brand Name: {product.name}</p>}
               {product.description && (
                 <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">{product.description}</p>
               )}
@@ -85,15 +79,20 @@ export default async function ProductDetailByIdPage({ params }: { params: Promis
           <ProductDosageCart productId={id} initialProduct={product} />
         </Suspense>
 
-        {/* Full product description — server-rendered, always visible for SEO */}
+        {/* Full product description — server-rendered and kept in the HTML for SEO */}
         {product.fullDescription && (
           <section className="rx-card overflow-hidden">
-            <div className="border-b border-slate-100 px-5 py-4">
-              <h2 className="text-base font-bold text-slate-900">Product Description</h2>
-            </div>
-            <div className="px-5 py-5 prose prose-sm max-w-none">
-              {renderMarkdownContent(product.fullDescription)}
-            </div>
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-4">
+                <span className="text-base font-bold text-slate-900">Product Description</span>
+                <span className="text-xl leading-none text-slate-400 transition-transform group-open:rotate-180">
+                  ⌄
+                </span>
+              </summary>
+              <div className="max-w-none px-5 py-5 prose prose-sm">
+                {renderMarkdownContent(product.fullDescription)}
+              </div>
+            </details>
           </section>
         )}
       </div>
