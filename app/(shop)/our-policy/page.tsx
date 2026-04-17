@@ -1,4 +1,12 @@
+import type { Metadata } from 'next'
 import { siteInputs } from '@/lib/site-inputs'
+
+export const metadata: Metadata = {
+  title: 'Our Policy | Pharma eCommerce Platform',
+  description:
+    'Review our ordering, payment, shipping, returns, privacy, and compliance policies for purchases on our store.',
+  keywords: 'pharmacy policy, shipping policy, returns policy, privacy policy',
+}
 
 export default function OurPolicyPage() {
   const siteHost = new URL(siteInputs.home.schema.organization.url).host
