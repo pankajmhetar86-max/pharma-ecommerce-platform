@@ -141,13 +141,7 @@ function PackageRow({
 // All static text (name, description, fullDescription) is rendered server-side
 // in the page component so it is always present in the initial HTML for SEO.
 
-export function ProductDosageCart({
-  productId,
-  initialProduct,
-}: {
-  productId: string
-  initialProduct: Product
-}) {
+export function ProductDosageCart({ productId, initialProduct }: { productId: string; initialProduct: Product }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session } = authClient.useSession()
@@ -183,9 +177,8 @@ export function ProductDosageCart({
 
   const getSelectionKey = (dosage?: string, pillCount?: number) => `${dosage ?? 'simple'}-${pillCount ?? ''}`
   const getSelectionQuantity = (dosage?: string, pillCount?: number) =>
-    cart?.items.find(
-      (item) => item.productId === product._id && item.dosage === dosage && item.pillCount === pillCount,
-    )?.quantity ?? 0
+    cart?.items.find((item) => item.productId === product._id && item.dosage === dosage && item.pillCount === pillCount)
+      ?.quantity ?? 0
 
   const handleAddToCart = async (dosage?: string, pillCount?: number) => {
     if (!session?.user) {

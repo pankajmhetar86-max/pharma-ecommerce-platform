@@ -1,4 +1,11 @@
+import type { Metadata } from 'next'
 import { siteInputs } from '@/lib/site-inputs'
+
+export const metadata: Metadata = {
+  title: 'Testimonials | Pharma eCommerce Platform',
+  description: 'Read customer feedback about ordering, support, delivery, and privacy on our platform.',
+  keywords: 'customer testimonials, pharmacy reviews, customer feedback',
+}
 
 export default function TestimonialsPage() {
   const siteHost = new URL(siteInputs.home.schema.organization.url).host

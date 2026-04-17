@@ -1,3 +1,12 @@
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'FAQ | Pharma eCommerce Platform',
+  description:
+    'Find answers to common questions about ordering, payments, prescriptions, shipping, returns, and customer support.',
+  keywords: 'pharmacy faq, order help, shipping questions, payment faq',
+}
+
 export default function FAQPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 lg:px-6">

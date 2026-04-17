@@ -1,4 +1,12 @@
+import type { Metadata } from 'next'
 import { siteInputs } from '@/lib/site-inputs'
+
+export const metadata: Metadata = {
+  title: 'About Us | Pharma eCommerce Platform',
+  description:
+    'Learn about our online pharmacy, our mission, and how we deliver pharmaceutical products with privacy and care.',
+  keywords: 'about online pharmacy, pharma mission, trusted medicine store',
+}
 
 export default function AboutUsPage() {
   const siteHost = new URL(siteInputs.home.schema.organization.url).host
