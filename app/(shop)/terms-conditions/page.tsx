@@ -1,4 +1,11 @@
+import type { Metadata } from 'next'
 import { siteInputs } from '@/lib/site-inputs'
+
+export const metadata: Metadata = {
+  title: 'Terms & Conditions | Pharma eCommerce Platform',
+  description: 'Read the terms and conditions governing the use of our website, products, pricing, and liability.',
+  keywords: 'terms and conditions, website terms, pharmacy legal',
+}
 
 export default function TermsConditionsPage() {
   const siteHost = new URL(siteInputs.home.schema.organization.url).host

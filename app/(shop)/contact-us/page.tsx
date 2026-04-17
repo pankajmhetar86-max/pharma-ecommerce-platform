@@ -1,4 +1,11 @@
+import type { Metadata } from 'next'
 import { siteInputs } from '@/lib/site-inputs'
+
+export const metadata: Metadata = {
+  title: 'Contact Us | Pharma eCommerce Platform',
+  description: 'Contact our support team for order help, product questions, and general assistance.',
+  keywords: 'contact pharmacy, customer support, pharma help',
+}
 
 export default function ContactUsPage() {
   const { email, telephone } = siteInputs.home.schema.organization
