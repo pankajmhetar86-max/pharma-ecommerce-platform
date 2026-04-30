@@ -2,10 +2,10 @@ import type { Metadata } from 'next'
 import { siteInputs } from '@/lib/site-inputs'
 
 export const metadata: Metadata = {
-  title: 'Geturpill | Trusted Online Drug store, No prescription Required',
+  title: 'Geturpill | Trusted Online Drugstore, No prescription Required',
   description:
-    'Get to know our online Drug store, our mission, and how we ensure secure ordering, discreet shipping, Bitcoin payments, and no prescription needed',
-  keywords: 'geturpill online pharmacy, bitcoin online pharmacy, trusted Online Drug store',
+    'Get to know our online Drugstore, our mission, and how we ensure secure ordering, discreet shipping, Bitcoin payments, and no prescription needed',
+  keywords: 'geturpill online pharmacy, bitcoin online pharmacy, trusted Online Drugstore',
 }
 
 export default function AboutUsPage() {
@@ -24,21 +24,21 @@ export default function AboutUsPage() {
         </p>
 
         <p>
-        Over the years, we have built a growing customer base around the world by focusing on consistency—timely dispatch, clear communication, and responsible handling of sensitive orders. We understand that purchasing medications online requires trust, and we aim to earn that trust through reliability rather than claims.
+        Over the years, we have built a growing customer base around the world by focusing on consistency timely dispatch, clear communication, and responsible handling of sensitive orders. We understand that purchasing medications online requires trust, and we aim to earn that trust through reliability rather than claims.
         </p>
 
         <h2 className="mt-6 text-lg font-semibold text-slate-700">Our Mission</h2>
         <p>
-        To simplify access to essential medications in India by combining verified sourcing, straightforward pricing, and a secure digital purchasing experience.
+        To simplify access to essential medications from our trusted online drugstore by combining verified sourcing, straightforward pricing, and a secure digital purchasing experience.
         </p>
 
-        <h2 className="mt-6 text-lg font-semibold text-slate-700">Why Choose Us?</h2>
+        <h2 className="mt-6 text-lg font-semibold text-slate-700">Why Choose Geturpill.com?</h2>
         <ul className="list-disc pl-5 space-y-2">
-          <li>Wide selection of pharmaceutical products</li>
-          <li>Secure Bitcoin payment processing</li>
-          <li>Discreet and reliable shipping across India</li>
-          <li>Dedicated customer support team</li>
-          <li>Strict quality control and product verification</li>
+          <li>Products sourced through screened and verified distribution channels </li>
+          <li>Transparent ordering process with clear product information </li>
+          <li>Privacy-focused packaging and shipment handling </li>
+          <li>Support team available to assist with order-related queries </li>
+          <li>Ongoing monitoring of product quality and supplier reliability</li>
         </ul>
       </div>
     </div>
