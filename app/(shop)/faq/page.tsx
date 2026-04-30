@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'FAQ | Pharma eCommerce Platform',
+  title: 'FAQ | Bitcoin Online Drug store selling drugs without prescription',
   description:
-    'Find answers to common questions about ordering, payments, prescriptions, shipping, returns, and customer support.',
-  keywords: 'pharmacy faq, order help, shipping questions, payment faq',
+    'Get answers on ordering, Bitcoin payments, no prescription requirements, shipping, reshipment, and customer support for our online drug store services.',
+  keywords: 'Bitcoin Online Drug store, Online Drug store selling drugs without prescription, online drug store services',
 }
 
 export default function FAQPage() {
