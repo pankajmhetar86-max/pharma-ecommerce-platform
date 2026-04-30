@@ -54,9 +54,9 @@ export function SiteFooter() {
             <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Company</p>
             <ul className="space-y-2.5">
               {[
+                { href: '/sitemap.xml', label: 'Sitemap' },
                 { href: '/about-us', label: 'About Us' },
                 { href: '/contact-us', label: 'Contact Us' },
-                // { href: '/testimonials', label: 'Testimonials' },
                 { href: '/our-policy', label: 'Our Policy' },
                 { href: '/terms-conditions', label: 'Terms & Conditions' },
               ].map(({ href, label }) => (
