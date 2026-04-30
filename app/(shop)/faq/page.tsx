@@ -59,12 +59,13 @@ export default function FAQPage() {
           <h2 className="mb-2 font-semibold text-slate-700">What is your reshipment policy?</h2>
           <p>
           Reshipment may be requested in the following cases:
+          <div>
           <ul>
           <li>Damaged product received</li>
           <li>Incorrect product delivered</li>
           <li>Order not delivered</li>
-
           </ul>
+          </div>
           For damaged or incorrect items, requests must be submitted within 24 hours of delivery, along with appropriate proof (such as photos).
           In cases of non-delivery, reshipment will be processed 14 days after the last tracking update, subject to review.
           </p>
