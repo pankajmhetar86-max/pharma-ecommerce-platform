@@ -16,56 +16,64 @@ export default function FAQPage() {
         <div>
           <h2 className="mb-2 font-semibold text-slate-700">How do I place an order?</h2>
           <p>
-            Browse our product catalog, add items to your cart, and proceed to checkout. You will need to create an
-            account or log in to complete your purchase.
+            To place an order, click on Register to create your account and set a password. Once logged in, browse our product catalog, add your desired items to the cart, and proceed to checkout to complete your payment.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 font-semibold text-slate-700">What payment methods do you accept?</h2>
           <p>
-            We currently accept Bitcoin (BTC) as our payment method. This ensures fast and secure transactions for all
-            our customers in India.
+            We currently accept Bitcoin (BTC) as our payment method, offering a secure and efficient transaction process.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 font-semibold text-slate-700">How can I check my order status?</h2>
           <p>
-            Log in to your account and visit the Order Status page to track the progress of your orders. You will also
-            receive email notifications when your order is processed and shipped.
+            You can track your order by logging into your account and visiting the Order Status page. Additionally, you will receive email notifications at key stages, including order processing and shipment.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 font-semibold text-slate-700">Do I need a prescription?</h2>
           <p>
-            Some of our products require a valid prescription. Please check the product description for details. We
-            strictly comply with all applicable laws and regulations regarding the sale of pharmaceutical products.
+            No, a prescription is not required to place an order on our platform.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 font-semibold text-slate-700">How long does delivery take?</h2>
           <p>
-            Delivery times vary depending on your location and the shipping option selected at checkout. Standard
-            delivery typically takes 7–14 business days. Express options may be available.
+            Delivery times vary based on your location and the shipping option selected at checkout. Standard delivery typically takes 7-14 business days.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 font-semibold text-slate-700">What is your return policy?</h2>
           <p>
-            Due to the nature of pharmaceutical products, returns are only accepted for items that are damaged or
-            incorrect. Please contact our support team within 48 hours of receiving your order.
+           We do not accept returns.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="mb-2 font-semibold text-slate-700">What is your reshipment policy?</h2>
+          <p>
+          Reshipment may be requested in the following cases:
+          <ul>
+          <li>Damaged product received</li>
+          <li>Incorrect product delivered</li>
+          <li>Order not delivered</li>
+
+          </ul>
+          For damaged or incorrect items, requests must be submitted within 24 hours of delivery, along with appropriate proof (such as photos).
+          In cases of non-delivery, reshipment will be processed 14 days after the last tracking update, subject to review.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 font-semibold text-slate-700">How do I contact customer support?</h2>
           <p>
-            You can reach our support team via the Contact Us page. We aim to respond to all inquiries as quickly as
-            possible. Please note that an automatic confirmation email will be sent upon receiving your message.
+            You can contact our support team through the Contact Us page on our website.
           </p>
         </div>
       </div>
