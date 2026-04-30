@@ -59,8 +59,8 @@ export default function FAQPage() {
           <h2 className="mb-2 font-semibold text-slate-700">What is your reshipment policy?</h2>
           <p>
           Reshipment may be requested in the following cases:
-          
-          <ul>
+
+          <ul className="list-disc pl-5 space-y-2">
           <li>Damaged product received</li>
           <li>Incorrect product delivered</li>
           <li>Order not delivered</li>
