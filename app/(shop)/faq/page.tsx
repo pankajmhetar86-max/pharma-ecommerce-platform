@@ -28,51 +28,51 @@ export default function FAQPage() {
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">How can I check my order status?</h2>
+          <h3 className="mb-2 font-semibold text-slate-700">How can I check my order status?</h3>
           <p>
             You can track your order by logging into your account and visiting the Order Status page. Additionally, you will receive email notifications at key stages, including order processing and shipment.
           </p>
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">Do I need a prescription?</h2>
+          <h3 className="mb-2 font-semibold text-slate-700">Do I need a prescription?</h3>
           <p>
             No, a prescription is not required to place an order on our platform.
           </p>
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">How long does delivery take?</h2>
+          <h3 className="mb-2 font-semibold text-slate-700">How long does delivery take?</h3>
           <p>
             Delivery times vary based on your location and the shipping option selected at checkout. Standard delivery typically takes 7-14 business days.
           </p>
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">What is your return policy?</h2>
+          <h4 className="mb-2 font-semibold text-slate-700">What is your return policy?</h4>
           <p>
            We do not accept returns.
           </p>
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">What is your reshipment policy?</h2>
+          <h4 className="mb-2 font-semibold text-slate-700">What is your reshipment policy?</h4>
           <p>
           Reshipment may be requested in the following cases:
-
+          <br/>
           <ul className="list-disc pl-5 space-y-2">
           <li>Damaged product received</li>
           <li>Incorrect product delivered</li>
           <li>Order not delivered</li>
           </ul>
-          
+          <br/>
           For damaged or incorrect items, requests must be submitted within 24 hours of delivery, along with appropriate proof (such as photos).
           In cases of non-delivery, reshipment will be processed 14 days after the last tracking update, subject to review.
           </p>
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">How do I contact customer support?</h2>
+          <h4 className="mb-2 font-semibold text-slate-700">How do I contact customer support?</h4>
           <p>
             You can contact our support team through the Contact Us page on our website.
           </p>
