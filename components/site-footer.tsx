@@ -21,7 +21,7 @@ export function SiteFooter() {
               </span>
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-              Quality pharmaceutical products delivered to your doorstep. Your health, our mission.
+              Convenient access to quality medications, delivered with care and commitment to your health.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="rx-badge bg-slate-800 text-slate-300 border border-slate-700">₿ BTC</span>
@@ -76,10 +76,10 @@ export function SiteFooter() {
           <div>
             <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Support</p>
             <div className="space-y-3">
-              <div className="flex items-start gap-2 text-sm text-slate-400">
+              {/* <div className="flex items-start gap-2 text-sm text-slate-400">
                 <Mail className="h-4 w-4 text-teal-500 mt-0.5 shrink-0" />
                 <span>Contact us via our support page for assistance.</span>
-              </div>
+              </div> */}
               <Link
                 href="/contact-us"
                 className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-2 text-sm font-medium text-teal-400 hover:bg-teal-500/20 hover:border-teal-400/50 transition-all"
@@ -111,8 +111,7 @@ export function SiteFooter() {
             </div>
           </div>
           <p className="mt-3 text-xs text-slate-600 text-center max-w-2xl mx-auto">
-            Please note: after contacting us you will receive an automatic confirmation. Our support team will reply
-            ASAP. If you did not receive a confirmation, your message may not have reached us — please try again.
+            Please note: Once you contact us, you should receive an automated confirmation. Our support team will reply promptly. If no confirmation arrives, your message may not have been received please try again.
           </p>
         </div>
       </div>
