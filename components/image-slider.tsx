@@ -60,7 +60,7 @@ export function ImageSlider({ initialImages }: { initialImages?: Doc<'sliderImag
             </div>
 
             <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white md:text-3xl">
-              Bitcoin Online Pharamcy is LIVE Now!</h1>
+              Bitcoin Online Pharamcy is LIVE Now !</h1>
               <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent md:text-2xl">
                 No Prescription Required.
               </span>
