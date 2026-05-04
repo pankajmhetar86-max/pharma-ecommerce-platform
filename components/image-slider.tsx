@@ -56,15 +56,15 @@ export function ImageSlider({ initialImages }: { initialImages?: Doc<'sliderImag
           <div>
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-xs font-semibold text-teal-400">
               <Zap className="h-3 w-3" />
-              Bitcoin Only Pharmacy is Live Now
+              Most Trusted Online pharmacy
             </div>
 
-            <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white md:text-5xl">
-              Wide Range of Produts Available.
+            <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white md:text-3xl">
+              Bitcoin Online Pharamcy is LIVE Now!</h1>
               <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
                 No Prescription Required.
               </span>
-            </h1>
+            
             <p className="mt-3 max-w-lg text-base text-slate-400 md:text-lg">
               Conveniently order authentic medicines online and receive them with speed and care
             </p>
