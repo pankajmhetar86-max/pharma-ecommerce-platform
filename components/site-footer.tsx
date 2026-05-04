@@ -23,9 +23,9 @@ export function SiteFooter() {
             <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
               Convenient access to quality medications, delivered with care and commitment to your health.
             </p>
-            <div className="flex flex-wrap items-center gap-2">
+            {/* <div className="flex flex-wrap items-center gap-2">
               <span className="rx-badge bg-slate-800 text-slate-300 border border-slate-700">₿ BTC</span>
-            </div>
+            </div> */}
           </div>
 
           {/* Quick links */}
