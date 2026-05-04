@@ -56,20 +56,20 @@ export function ImageSlider({ initialImages }: { initialImages?: Doc<'sliderImag
           <div>
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-xs font-semibold text-teal-400">
               <Zap className="h-3 w-3" />
-              Bitcoin Only Pharmacy
+              Bitcoin Only Pharmacy is Live Now
             </div>
 
             <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white md:text-5xl">
-              More Convenience.{' '}
+              Wide Range of Produts Available.
               <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
-                Better Health.
+                No Prescription Required.
               </span>
             </h1>
             <p className="mt-3 max-w-lg text-base text-slate-400 md:text-lg">
-              Order quality medicines from the comfort of your home. Fast delivery, genuine products.
+              Conveniently order authentic medicines online and receive them with speed and care
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            {/* <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/"
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-900/30 hover:from-teal-400 hover:to-cyan-400 transition-all"
@@ -82,7 +82,7 @@ export function ImageSlider({ initialImages }: { initialImages?: Doc<'sliderImag
               >
                 Learn More
               </Link>
-            </div>
+            </div> */}
 
             <div className="mt-6 flex flex-wrap gap-3">
               {FEATURE_BADGES.map(({ icon: Icon, text }) => (
