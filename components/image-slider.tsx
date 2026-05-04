@@ -98,7 +98,7 @@ export function ImageSlider({ initialImages }: { initialImages?: Doc<'sliderImag
           </div>
 
           <div className="mx-auto max-w-[220px] md:max-w-[240px]">
-            <img src="/doctor-hero.svg" alt="Professional doctor" className="w-full drop-shadow-2xl" />
+            <img src="/test.png" alt="Professional doctor" className="w-full drop-shadow-2xl" />
           </div>
         </div>
       </section>

@@ -18,7 +18,7 @@ export function HeroSection() {
           </Link>
         </div>
         <div className="mx-auto max-w-[260px]">
-          <img src="/doctor-hero.svg" alt="Professional doctor" className="w-full" />
+          <img src="/test.png" alt="Professional doctor" className="w-full" />
         </div>
       </div>
       <div className="pointer-events-none absolute -left-12 -top-12 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
