@@ -2,82 +2,68 @@ import type { Metadata } from 'next'
 import { siteInputs } from '@/lib/site-inputs'
 
 export const metadata: Metadata = {
-  title: 'Terms & Conditions | Pharma eCommerce Platform',
-  description: 'Read the terms and conditions governing the use of our website, products, pricing, and liability.',
-  keywords: 'terms and conditions, website terms, pharmacy legal',
+  title: 'GetUrPill Bitcoin Online Pharmacy | Terms & Conditions',
+  description: 'Understand Bitcoin Online Pharmacy Terms & Conditions for website use, product orders, pricing policies, liability limits, and how disputes are handled',
+  keywords: 'terms and conditions, Bitcoin Online Pharmacy, ',
 }
 
 export default function TermsConditionsPage() {
   const siteHost = new URL(siteInputs.home.schema.organization.url).host
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 lg:px-6">
-      <h1 className="mb-6 text-2xl font-bold text-slate-800">Terms &amp; Conditions</h1>
+      <h1 className="mb-6 text-2xl font-bold text-slate-800">Terms And Conditions of Geturpill.com a Bitcoin Online Pharmacy </h1>
 
       <div className="space-y-6 text-slate-600">
         <p>
-          By accessing or using {siteHost}, you agree to be bound by these Terms &amp; Conditions. If you do not agree
-          with any part of these terms, please do not use our website.
+          Your use of <a href="/" target="_blank"> www.geturpill.com </a> indicates your acceptance of these Terms & Conditions. If you disagree with them, you should not continue using the website.
         </p>
 
         <div>
           <h2 className="mb-2 font-semibold text-slate-700">1. Use of the Website</h2>
           <p>
-            You agree to use this website only for lawful purposes and in a manner that does not infringe the rights of
-            others. You must not use this site to distribute any unlawful, harmful, or fraudulent content.
+            Bitcoin Online Pharmacy is intended for legitimate use only. You are expected to interact with it responsibly and not engage in any activity that could harm, misuse, or interfere with other users or the platform itself.
           </p>
         </div>
 
         <div>
           <h2 className="mb-2 font-semibold text-slate-700">2. Products and Orders</h2>
           <p>
-            We reserve the right to modify, suspend, or discontinue any product or service without notice. All product
-            descriptions are provided in good faith, but we do not warrant that descriptions are accurate, complete, or
-            current.
+            Our product listings and services may change over time. We may remove, replace, or update items without prior notice. While we aim to present accurate information, details such as descriptions or availability may occasionally vary.
           </p>
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">3. Pricing</h2>
+          <h3 className="mb-2 font-semibold text-slate-700">3. Pricing</h3>
           <p>
-            All prices are listed in USD and are subject to change without notice. We reserve the right to refuse any
-            order placed at an incorrect price due to typographical or system errors.
+           Prices are displayed in USD and may be revised at any time. If an order is placed based on incorrect pricing due to technical or human error, we reserve the right to cancel or adjust that order.
           </p>
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">4. Intellectual Property</h2>
+          <h3 className="mb-2 font-semibold text-slate-700">4. Intellectual Property</h3>
           <p>
-            All content on this website, including text, images, logos, and graphics, is the property of {siteHost} and
-            is protected by applicable intellectual property laws. Unauthorized reproduction or use is strictly
-            prohibited.
+           All materials on this site belong to www.geturpill.com. They are protected by law and cannot be copied, reused, or distributed without permission.
           </p>
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">5. Limitation of Liability</h2>
+          <h3 className="mb-2 font-semibold text-slate-700">5. Limitation of Liability</h3>
           <p>
-            We shall not be liable for any indirect, incidental, or consequential damages arising from the use of our
-            website or products. Our total liability to you for any claim shall not exceed the amount paid for the
-            relevant order.
+            We are not responsible for losses that occur indirectly or as a side effect of using our website or products. In any case, our responsibility will not exceed the amount paid for the order in question.
           </p>
         </div>
 
         <div>
-          <h2 className="mb-2 font-semibold text-slate-700">6. Changes to Terms</h2>
+          <h4 className="mb-2 font-semibold text-slate-700">6. Changes to Terms</h4>
           <p>
-            We reserve the right to update these Terms &amp; Conditions at any time. Continued use of the website after
-            changes are posted constitutes acceptance of the revised terms.
+            These terms may be revised as our services evolve. By continuing to use the website after updates, you acknowledge and accept the revised terms.
           </p>
         </div>
 
-        <div>
-          <h2 className="mb-2 font-semibold text-slate-700">7. Governing Law</h2>
-          <p>
-            These terms shall be governed by and construed in accordance with applicable law. Any disputes shall be
-            resolved through binding arbitration.
-          </p>
-        </div>
+        
       </div>
     </div>
   )
 }
+
+
