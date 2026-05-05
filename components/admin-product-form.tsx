@@ -33,6 +33,7 @@ export type ProductFormData = {
   pricingMatrix: DosagePricing[]
   image: string
   imageAlt: string
+  imageTitle: string
   inStock: boolean
   slug: string
   seoTitle: string
@@ -58,6 +59,7 @@ const EMPTY_FORM: ProductFormData = {
   pricingMatrix: [],
   image: '',
   imageAlt: '',
+  imageTitle: '',
   inStock: true,
   slug: '',
   seoTitle: '',
@@ -106,6 +108,7 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
           pricingMatrix: matrixFromDoc(initial),
           image: initial.image,
           imageAlt: initial.imageAlt ?? '',
+          imageTitle: initial.imageTitle ?? '',
           inStock: initial.inStock,
           slug: initial.slug ?? slugify(`${initial.name} ${initial.genericName}`),
           seoTitle: initial.seoTitle ?? '',
@@ -907,6 +910,17 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
                 />
               </div>
 
+              <div className="mt-3">
+                <label className={labelClass}>Image Title</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="e.g. Glucophage 500mg product image"
+                  value={form.imageTitle}
+                  onChange={(e) => set('imageTitle', e.target.value)}
+                />
+              </div>
+
               {/* Live card preview */}
               {(previewSrc || uploading) && (
                 <div className="mt-4">
@@ -926,6 +940,7 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
                             <img
                               src={previewSrc}
                               alt={form.imageAlt || 'Preview'}
+                              title={form.imageTitle || form.imageAlt || 'Preview'}
                               className={previewLoadError ? 'hidden' : 'h-24 w-24 object-contain'}
                               onLoad={() => setPreviewLoadError(false)}
                               onError={() => setPreviewLoadError(imageMode === 'url')}

@@ -86,7 +86,12 @@ export default async function ProductSlugPage({ params }: { params: Promise<{ sl
         <section className="rx-card overflow-hidden">
           <div className="flex flex-wrap items-start gap-6 p-5 md:p-6">
             <div className="shrink-0 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 p-5">
-              <img src={imageSrc} alt={product.imageAlt ?? product.name} className="h-36 w-36 object-contain" />
+              <img
+                src={imageSrc}
+                alt={product.imageAlt ?? product.name}
+                title={product.imageTitle ?? product.imageAlt ?? product.name}
+                className="h-36 w-36 object-contain"
+              />
             </div>
 
             <div className="min-w-0 flex-1">
