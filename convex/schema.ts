@@ -78,6 +78,7 @@ export default defineSchema({
     pricingMatrix: v.optional(v.array(dosagePricingValidator)),
     image: v.string(),
     imageAlt: v.optional(v.string()),
+    imageTitle: v.optional(v.string()),
     discount: v.optional(v.number()),
     inStock: v.boolean(),
     isBestseller: v.optional(v.boolean()),

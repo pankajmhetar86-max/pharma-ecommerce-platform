@@ -349,6 +349,7 @@ function ProductRow({ product, editHref, onDelete, onToggleStock, onToggleVisibi
             <img
               src={product.image}
               alt={product.imageAlt ?? product.name}
+              title={product.imageTitle ?? product.imageAlt ?? product.name}
               className="h-10 w-10 shrink-0 rounded-lg border border-slate-100 object-cover"
             />
           ) : (

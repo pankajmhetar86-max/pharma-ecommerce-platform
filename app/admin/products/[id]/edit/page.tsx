@@ -34,6 +34,8 @@ function normalizeFormData(data: ProductFormData) {
     dosageOptions: pricingMatrix.map((d) => d.dosage),
     pricingMatrix: pricingMatrix.length > 0 ? pricingMatrix : undefined,
     fullDescription: data.fullDescription || undefined,
+    imageAlt: data.imageAlt.trim() || undefined,
+    imageTitle: data.imageTitle.trim() || undefined,
     slug: data.slug.trim() || undefined,
   }
 }

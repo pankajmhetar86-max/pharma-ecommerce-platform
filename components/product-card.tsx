@@ -21,6 +21,7 @@ export function ProductCard({ product }: { product: Doc<'products'> }) {
             <img
               src={imageSrc}
               alt={product.imageAlt ?? product.name}
+              title={product.imageTitle ?? product.imageAlt ?? product.name}
               className="h-28 w-28 object-contain transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {
                 ;(e.currentTarget as HTMLImageElement).src = 'https://placehold.co/200x200/f1f5f9/94a3b8?text=No+Image'

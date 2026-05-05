@@ -267,6 +267,15 @@ export function buildProductDetailSchema(product: HomeProduct) {
             },
           ]
         : []),
+      ...(product.imageTitle
+        ? [
+            {
+              '@type': 'PropertyValue',
+              'name': 'Image Title',
+              'value': product.imageTitle,
+            },
+          ]
+        : []),
     ].filter((entry) => entry.value),
   }
 }
