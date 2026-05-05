@@ -1,5 +1,4 @@
 export const DISALLOWED_PATHS = [
-   '/contact-us',
   '/admin',
   '/cart',
   '/checkout',
