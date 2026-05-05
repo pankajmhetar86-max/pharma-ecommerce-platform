@@ -18,22 +18,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // { url: `${baseUrl}/testimonials`, lastModified, changeFrequency: 'monthly', priority: 0.4 },
   ]
 
-  let categoryRoutes: MetadataRoute.Sitemap = []
   let productRoutes: MetadataRoute.Sitemap = []
 
   try {
-    const [categories, products] = await Promise.all([
-      fetchQuery(api.categories.list),
-      fetchQuery(api.products.listForSitemap),
-    ])
-
-    categoryRoutes = categories.map((category) => ({
-      url: `${baseUrl}/category/${category.name.replace(/ /g, '+')}`,
-      lastModified,
-      changeFrequency: 'daily' as const,
-      priority: 0.8,
-    }))
-
+    const products = await fetchQuery(api.products.listForSitemap)
     productRoutes = products.map((product) => ({
       url: `${baseUrl}/${product.slug}`,
       lastModified,
@@ -44,5 +32,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // If Convex is unavailable, fall back to static routes only
   }
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes].filter((entry) => !isDisallowed(entry.url))
+  return [...staticRoutes, ...productRoutes].filter((entry) => !isDisallowed(entry.url))
 }
