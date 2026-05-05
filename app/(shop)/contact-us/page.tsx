@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import { siteInputs } from '@/lib/site-inputs'
 
 export const metadata: Metadata = {
-  title: 'Contact Us | Pharma eCommerce Platform',
-  description: 'Contact our support team for order help, product questions, and general assistance.',
-  keywords: 'contact pharmacy, customer support, pharma help',
+  title: 'Contact Us for ordering medicines at your doorstep',
+  description: 'Contact geturpill.com if you wish to order medicines without prescription at your doorstep. Crypto Payment is available, fastest delivery, discreet packing. ',
+  keywords: 'order medicines without prescription, ordering medicines at your doorstep, geturpill.com',
 }
 
 export default function ContactUsPage() {
