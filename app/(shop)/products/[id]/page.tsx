@@ -89,7 +89,7 @@ export default async function ProductDetailByIdPage({ params }: { params: Promis
                   ⌄
                 </span>
               </summary>
-              <div className="max-w-none px-5 py-5 prose prose-sm">
+              <div className="max-w-none px-5 py-5 prose prose-sm text-justify">
                 {renderMarkdownContent(product.fullDescription)}
               </div>
             </details>
