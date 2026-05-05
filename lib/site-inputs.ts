@@ -21,7 +21,7 @@ export const siteInputs = {
         url: SITE_URL,
         logoPath: '/favicon.ico',
         telephone: process.env.NEXT_PUBLIC_SUPPORT_PHONE?.trim() || 'coming soon',
-        email: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'coming soon',
+        email: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@geturpill.com',
         contactType: 'Customer Service',
         areaServed: 'IN',
         availableLanguages: ['English'],
