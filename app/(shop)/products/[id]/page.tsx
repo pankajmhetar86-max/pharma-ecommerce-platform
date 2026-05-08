@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
@@ -17,7 +18,7 @@ export default async function ProductDetailByIdPage({ params }: { params: Promis
   const product = await fetchQuery(api.products.getBySlugOrId, { identifier: id })
 
   if (!product) {
-    return null
+    notFound()
   }
 
   const productSchema = buildProductDetailSchema(product)

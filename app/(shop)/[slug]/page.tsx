@@ -1,6 +1,7 @@
 import { cache, Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
@@ -51,7 +52,7 @@ export default async function ProductSlugPage({ params }: { params: Promise<{ sl
   const product = await getProduct(slug)
 
   if (!product) {
-    return null
+    notFound()
   }
 
   const productSchema = buildProductDetailSchema(product)
