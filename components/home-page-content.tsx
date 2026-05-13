@@ -11,7 +11,7 @@ import { ProductGrid } from './product-grid'
 type SliderImage = Doc<'sliderImages'>
 
 export function HomePageContent({ initialSliderImages }: { initialSliderImages?: SliderImage[] }) {
-  const [selectedView, setSelectedView] = useState<SidebarView>('recommended-')
+  const [selectedView, setSelectedView] = useState<SidebarView>('recommended')
 
   const fetchedCategories = useQuery(api.categories.list)
   const recommendedProducts = useQuery(api.products.listRecommended, selectedView === 'recommended' ? {} : 'skip')
