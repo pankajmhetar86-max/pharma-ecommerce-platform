@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: '',
-  description: 'Trusted online pharmaceutical platform with secure authentication and real-time cart sync.',
+  description: '',
 }
 
 function serializeJsonLd(schema: unknown) {
