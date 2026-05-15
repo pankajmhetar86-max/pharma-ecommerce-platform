@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: siteInputs.home.seoTitle,
   description: siteInputs.home.seoDescription,
   keywords: siteInputs.home.seoKeywords,
+  alternates: {
+    canonical: '/',
+  },
 }
 
 export default async function HomePage() {

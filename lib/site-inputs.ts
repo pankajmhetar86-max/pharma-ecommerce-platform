@@ -1,6 +1,22 @@
 export const SITE_NAME = 'GetUrPill.com'
-const DEFAULT_SITE_URL = 'https://www.GetUrPill.com'
-export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.SITE_URL ?? DEFAULT_SITE_URL).replace(/\/+$/, '')
+const DEFAULT_SITE_URL = 'https://www.geturpill.com'
+
+function normalizeSiteUrl(value: string) {
+  try {
+    const url = new URL(value)
+    url.hostname = url.hostname.toLowerCase()
+
+    if (url.hostname === 'geturpill.com') {
+      url.hostname = 'www.geturpill.com'
+    }
+
+    return url.toString().replace(/\/+$/, '')
+  } catch {
+    return DEFAULT_SITE_URL
+  }
+}
+
+export const SITE_URL = normalizeSiteUrl(process.env.NEXT_PUBLIC_APP_URL ?? process.env.SITE_URL ?? DEFAULT_SITE_URL)
 
 function normalizeGoogleTagId(value: string | undefined) {
   const trimmed = (value ?? '').trim()

@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: 'Contact Us for ordering medicines at your doorstep',
   description: 'Contact geturpill.com if you wish to order medicines without prescription at your doorstep. Crypto Payment is available, fastest delivery, discreet packing. ',
   keywords: 'order medicines without prescription, ordering medicines at your doorstep, geturpill.com',
+  alternates: {
+    canonical: '/contact-us',
+  },
 }
 
 export default function ContactUsPage() {

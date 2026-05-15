@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   description:
     'Get answers on ordering, Bitcoin payments, no prescription requirements, shipping, reshipment, and customer support for our online drug store services.',
   keywords: 'Bitcoin Online Drug store, Online Drug store selling drugs without prescription, online drug store services',
+  alternates: {
+    canonical: '/faq',
+  },
 }
 
 export default function FAQPage() {

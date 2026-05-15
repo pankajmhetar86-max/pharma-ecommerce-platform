@@ -7,6 +7,12 @@ function getCanonicalOrigin() {
 
   try {
     const url = new URL(value)
+    url.hostname = url.hostname.toLowerCase()
+
+    if (url.hostname === 'geturpill.com') {
+      url.hostname = 'www.geturpill.com'
+    }
+
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
       return null
     }

@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   description:
     'Explore our online drug store policies on ordering, Bitcoin payments, shipping, reshipment terms, privacy practices, and compliance guidelines.',
   keywords: 'online drug store policies, Bitcoin pharmacy policy, shipping policy, privacy policy',
+  alternates: {
+    canonical: '/our-policy',
+  },
 }
 
 export default function OurPolicyPage() {
