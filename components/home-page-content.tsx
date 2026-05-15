@@ -24,7 +24,7 @@ export function HomePageContent({ initialSliderImages }: { initialSliderImages?:
   const categories = fetchedCategories?.map((category) => ({ _id: category._id, name: category.name })) ?? []
 
   const heading =
-    selectedView === 'recommended' ? 'Recommended' : selectedView === 'all' ? 'All Products' : selectedView
+    selectedView === 'recommended' ? 'Top Selling Products of Bitcoin Online Pharmacy' : selectedView === 'all' ? 'All Products' : selectedView
 
   const displayProducts =
     selectedView === 'recommended' ? recommendedProducts : selectedView === 'all' ? allProducts : categoryProducts
@@ -46,7 +46,7 @@ export function HomePageContent({ initialSliderImages }: { initialSliderImages?:
       </div>
       {/* 3rd on mobile; desktop: right col, row 2 */}
       <section className="space-y-3 lg:col-start-2 lg:row-start-2">
-        <h2 className="text-3xl font-bold text-slate-900 md:text-2xl">{heading}</h2>
+        <h2 className="text-2xl font-bold text-slate-900 md:text-2xl">{heading}</h2>
         {emptyMessage ? (
           <p className="py-12 text-center text-slate-400">{emptyMessage}</p>
         ) : (
