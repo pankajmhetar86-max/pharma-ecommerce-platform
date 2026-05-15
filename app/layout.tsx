@@ -6,13 +6,17 @@ import { api } from '@/convex/_generated/api'
 import { ConvexClientProvider } from './convex-client-provider'
 import { getToken } from '@/lib/auth-server'
 import { buildProductSchemas, buildSiteSchemas } from '@/lib/home-schema'
-import { siteInputs } from '@/lib/site-inputs'
+import { SITE_URL, siteInputs } from '@/lib/site-inputs'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: '',
-  description: '',
+  title: 'Pharma eCommerce Platform',
+  description: 'Trusted online pharmaceutical platform with secure authentication and real-time cart sync.',
+  metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: '/',
+  },
 }
 
 function serializeJsonLd(schema: unknown) {

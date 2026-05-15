@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: 'GetUrPill Bitcoin Online Pharmacy | Terms & Conditions',
   description: 'Understand Bitcoin Online Pharmacy Terms & Conditions for website use, product orders, pricing policies, liability limits, and how disputes are handled',
   keywords: 'terms and conditions, Bitcoin Online Pharmacy, ',
+  alternates: {
+    canonical: '/terms-conditions',
+  },
 }
 
 export default function TermsConditionsPage() {
@@ -65,5 +68,4 @@ export default function TermsConditionsPage() {
     </div>
   )
 }
-
 

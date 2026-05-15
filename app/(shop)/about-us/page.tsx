@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   description:
     'Get to know our online Drugstore, our mission, and how we ensure secure ordering, discreet shipping, Bitcoin payments, and no prescription needed',
   keywords: 'geturpill online pharmacy, bitcoin online pharmacy, trusted Online Drugstore',
+  alternates: {
+    canonical: '/about-us',
+  },
 }
 
 export default function AboutUsPage() {
