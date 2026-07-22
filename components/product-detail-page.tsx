@@ -51,7 +51,9 @@ export function ProductDetailPage({ product, initialDosage }: ProductDetailPageP
               ) : null}
             </div>
 
-            <p className="mt-2 text-xl font-extrabold text-slate-900 md:text-2xl lg:text-3xl">{product.genericName}</p>
+            <h1 className="mt-2 text-xl font-extrabold text-slate-900 md:text-2xl lg:text-3xl">
+              {product.genericName}
+            </h1>
             {product.name ? <p className="mt-0.5 text-sm text-slate-400">Brand Name: {product.name}</p> : null}
             {product.description ? (
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">{product.description}</p>
@@ -76,13 +78,10 @@ export function ProductDetailPage({ product, initialDosage }: ProductDetailPageP
 
       {product.fullDescription ? (
         <section className="rx-card overflow-hidden">
-          <details className="group">
-            <summary className="flex cursor-pointer list-none items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-4">
-              <h2 className="text-base font-bold text-slate-900">Product Description</h2>
-              <span className="text-xl leading-none text-slate-400 transition-transform group-open:rotate-180">⌄</span>
-            </summary>
-            <div className="px-5 py-5 prose prose-sm max-w-none">{renderMarkdownContent(product.fullDescription)}</div>
-          </details>
+          <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-4">
+            <h2 className="text-base font-bold text-slate-900">Product Description</h2>
+          </div>
+          <div className="px-5 py-5 prose prose-sm max-w-none">{renderMarkdownContent(product.fullDescription)}</div>
         </section>
       ) : null}
     </div>

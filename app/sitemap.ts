@@ -4,6 +4,8 @@ import { api } from '@/convex/_generated/api'
 import { isDisallowed } from '@/lib/seo-config'
 import { SITE_URL } from '@/lib/site-inputs'
 
+export const revalidate = 3600
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_URL
   const lastModified = new Date()

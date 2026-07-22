@@ -6,11 +6,13 @@ import { ChevronLeft } from 'lucide-react'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { ProductDosageCart } from '@/components/product-detail-content'
-import { buildProductDetailSchema } from '@/lib/home-schema'
+import { buildBreadcrumbSchema, buildProductDetailSchema } from '@/lib/home-schema'
 import { toAbsoluteProductImageUrl, toProductImagePath } from '@/lib/image-url'
 import { renderMarkdownContent } from '@/lib/markdown'
 
 const getProduct = cache((identifier: string) => fetchQuery(api.products.getBySlugOrId, { identifier }))
+
+export const revalidate = 300
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -58,14 +60,25 @@ export default async function ProductSlugPage({ params }: { params: Promise<{ sl
     notFound()
   }
 
-  const productSchema = buildProductDetailSchema(product)
+  const schemas = [
+    buildProductDetailSchema(product),
+    buildBreadcrumbSchema([
+      { name: 'Home', path: '/' },
+      { name: product.category, path: '/' },
+      { name: product.genericName || product.name, path: `/${product.slug ?? slug}` },
+    ]),
+  ].filter(Boolean)
   const imageSrc = toProductImagePath(product.slug ?? product._id, product.image)
 
   return (
     <>
-      {productSchema ? (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(productSchema) }} />
-      ) : null}
+      {schemas.map((schema, index) => (
+        <script
+          key={`product-schema-${index}`}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
+        />
+      ))}
 
       <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 lg:px-6">
         {/* Back link */}
@@ -106,9 +119,9 @@ export default async function ProductSlugPage({ params }: { params: Promise<{ sl
                   </span>
                 </div>
               )}
-              <p className="mt-2 text-xl font-extrabold text-slate-900 md:text-2xl lg:text-3xl">
+              <h1 className="mt-2 text-xl font-extrabold text-slate-900 md:text-2xl lg:text-3xl">
                 {product.genericName}
-              </p>
+              </h1>
               {product.name && <p className="mt-0.5 text-sm text-slate-400">Brand Name: {product.name}</p>}
               {product.description && (
                 <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">{product.description}</p>
@@ -125,17 +138,12 @@ export default async function ProductSlugPage({ params }: { params: Promise<{ sl
         {/* Full product description — server-rendered and kept in the HTML for SEO */}
         {product.fullDescription && (
           <section className="rx-card overflow-hidden">
-            <details className="group">
-              <summary className="flex cursor-pointer list-none items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-4">
-                <span className="text-base font-bold text-slate-900">Product Description</span>
-                <span className="text-xl leading-none text-slate-400 transition-transform group-open:rotate-180">
-                  ⌄
-                </span>
-              </summary>
-              <div className="max-w-none px-5 py-5 prose prose-sm text-justify">
-                {renderMarkdownContent(product.fullDescription)}
-              </div>
-            </details>
+            <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-4">
+              <h2 className="text-base font-bold text-slate-900">Product Description</h2>
+            </div>
+            <div className="max-w-none px-5 py-5 prose prose-sm text-justify">
+              {renderMarkdownContent(product.fullDescription)}
+            </div>
           </section>
         )}
       </div>

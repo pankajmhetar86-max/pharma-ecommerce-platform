@@ -1,14 +1,8 @@
 import type { Metadata } from 'next'
-import { fetchQuery } from 'convex/nextjs'
-import { headers } from 'next/headers'
 import './globals.css'
-import { api } from '@/convex/_generated/api'
 import { ConvexClientProvider } from './convex-client-provider'
-import { getToken } from '@/lib/auth-server'
-import { buildProductSchemas, buildSiteSchemas } from '@/lib/home-schema'
-import { SITE_URL, siteInputs } from '@/lib/site-inputs'
-
-export const dynamic = 'force-dynamic'
+import { buildSiteSchemas } from '@/lib/home-schema'
+import { SITE_URL } from '@/lib/site-inputs'
 
 export const metadata: Metadata = {
   title: 'Pharma eCommerce Platform',
@@ -28,35 +22,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const token = await getToken()
-  const pathname = (await headers()).get('x-pathname') ?? ''
-  const isHomePage = pathname === '/'
-  const googleTagId = isHomePage ? siteInputs.home.googleTagId.trim() : ''
-  let schemas: unknown[] = buildSiteSchemas()
-
-  if (isHomePage) {
-    const recommendedProducts = await fetchQuery(api.products.listRecommended)
-    const fallbackProducts =
-      recommendedProducts.length > 0 ? recommendedProducts : await fetchQuery(api.products.list, { limit: 8 })
-    schemas = [...schemas, ...buildProductSchemas(fallbackProducts)]
-  }
+  const schemas = buildSiteSchemas()
 
   return (
     <html lang="en">
       <head>
-        {googleTagId ? <script async src={`https://www.googletagmanager.com/gtag/js?id=${googleTagId}`} /> : null}
-        {googleTagId ? (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', ${JSON.stringify(googleTagId)});
-              `,
-            }}
-          />
-        ) : null}
         {schemas.map((schema, index) => (
           <script
             key={`home-schema-${index}`}
@@ -81,7 +51,7 @@ if('serviceWorker' in navigator){
 }`,
           }}
         />
-        <ConvexClientProvider initialToken={token}>{children}</ConvexClientProvider>
+        <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
     </html>
   )

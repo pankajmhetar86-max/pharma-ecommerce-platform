@@ -1,5 +1,5 @@
 import { internalMutation, query } from './_generated/server'
-import { CATEGORY_NAMES, SEED_PRODUCTS } from './sampleData'
+import { CATEGORY_NAMES, SEED_CATEGORIES, SEED_PRODUCTS } from './sampleData'
 import { DEFAULT_UNIT_TYPES } from './constants'
 
 export const getSeedStatus = query({
@@ -22,11 +22,11 @@ export const seedDatabase = internalMutation({
     const existingProducts = await ctx.db.query('products').take(1)
 
     if (existingCategories.length === 0) {
-      for (const [index, categoryName] of CATEGORY_NAMES.entries()) {
+      for (const category of SEED_CATEGORIES) {
         await ctx.db.insert('categories', {
-          name: categoryName,
-          icon: 'heart',
-          sortOrder: index,
+          name: category.name,
+          icon: category.icon,
+          sortOrder: category.sortOrder,
         })
       }
     }
