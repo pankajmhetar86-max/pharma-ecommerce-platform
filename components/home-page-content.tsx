@@ -9,8 +9,18 @@ import { ImageSlider } from './image-slider'
 import { ProductGrid } from './product-grid'
 
 type SliderImage = Doc<'sliderImages'>
+type Category = Doc<'categories'>
+type Product = Doc<'products'>
 
-export function HomePageContent({ initialSliderImages }: { initialSliderImages?: SliderImage[] }) {
+export function HomePageContent({
+  initialSliderImages,
+  initialCategories = [],
+  initialProducts = [],
+}: {
+  initialSliderImages?: SliderImage[]
+  initialCategories?: Category[]
+  initialProducts?: Product[]
+}) {
   const [selectedView, setSelectedView] = useState<SidebarView>('recommended')
 
   const fetchedCategories = useQuery(api.categories.list)
@@ -21,13 +31,18 @@ export function HomePageContent({ initialSliderImages }: { initialSliderImages?:
     selectedView !== 'recommended' && selectedView !== 'all' ? { category: selectedView, limit: 40 } : 'skip',
   )
 
-  const categories = fetchedCategories?.map((category) => ({ _id: category._id, name: category.name })) ?? []
+  const categorySource = fetchedCategories ?? initialCategories
+  const categories = categorySource.map((category) => ({ _id: category._id, name: category.name }))
 
   const heading =
     selectedView === 'recommended' ? 'Top Selling Products of Bitcoin Online Pharmacy' : selectedView === 'all' ? 'All Products' : selectedView
 
   const displayProducts =
-    selectedView === 'recommended' ? recommendedProducts : selectedView === 'all' ? allProducts : categoryProducts
+    selectedView === 'recommended'
+      ? (recommendedProducts ?? initialProducts)
+      : selectedView === 'all'
+        ? allProducts
+        : categoryProducts
 
   const emptyMessage =
     selectedView === 'recommended' && recommendedProducts?.length === 0

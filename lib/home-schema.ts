@@ -22,6 +22,30 @@ function toAbsoluteUrl(pathOrUrl: string, baseUrl: string) {
   return new URL(pathOrUrl, normalizeBaseUrl(baseUrl)).toString()
 }
 
+function toPlainText(value: string | undefined) {
+  return (value ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export function buildBreadcrumbSchema(items: Array<{ name: string; path: string }>) {
+  const schema = siteInputs.home.schema
+  if (!schema.enabled || !schema.breadcrumbs.enabled || items.length === 0) return null
+
+  const siteUrl = schema.organization.url
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': items.map((item, index) => ({
+      '@type': 'ListItem',
+      'position': index + 1,
+      'name': item.name,
+      'item': toAbsoluteUrl(item.path, siteUrl),
+    })),
+  }
+}
+
 function getProductOfferPrice(product: HomeProduct) {
   if (product.pricingMatrix && product.pricingMatrix.length > 0) {
     let lowestPrice = Number.POSITIVE_INFINITY
@@ -88,7 +112,7 @@ function buildProductOfferEntries(product: HomeProduct, siteUrl: string) {
   return []
 }
 
-export function buildSiteSchemas() {
+export function buildSiteSchemas({ includeDefaultBreadcrumbs = false } = {}) {
   const schema = siteInputs.home.schema
   if (!schema.enabled) return []
 
@@ -110,7 +134,7 @@ export function buildSiteSchemas() {
     ...(schema.organization.sameAs.length > 0 ? { sameAs: schema.organization.sameAs } : {}),
   }
 
-  const breadcrumbList = schema.breadcrumbs.enabled
+  const breadcrumbList = includeDefaultBreadcrumbs && schema.breadcrumbs.enabled
     ? {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
@@ -158,7 +182,7 @@ export function buildProductSchemas(products: HomeProduct[]) {
       '@type': 'Product',
       'name': product.name,
       'image': toAbsoluteProductImageUrl(identifier, product.image),
-      'description': product.seoDescription || product.description,
+      'description': toPlainText(product.seoDescription || product.description),
       'brand': {
         '@type': 'Brand',
         'name': schema.organization.name,
@@ -202,7 +226,7 @@ export function buildProductDetailSchema(product: HomeProduct) {
     'sku': identifier,
     'url': toAbsoluteUrl(`/${identifier}`, siteUrl),
     'image': [imageUrl],
-    'description': product.fullDescription || product.seoDescription || product.description,
+    'description': toPlainText(product.seoDescription || product.description || product.fullDescription),
     'category': product.category,
     'brand': product.name
       ? {
@@ -281,5 +305,5 @@ export function buildProductDetailSchema(product: HomeProduct) {
 }
 
 export function buildHomeSchemas(products: HomeProduct[]) {
-  return [...buildSiteSchemas(), ...buildProductSchemas(products)]
+  return [...buildSiteSchemas({ includeDefaultBreadcrumbs: true }), ...buildProductSchemas(products)]
 }

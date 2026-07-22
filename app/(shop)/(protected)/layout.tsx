@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { isAuthenticated } from '@/lib/auth-server'
 import { ClientAuthBoundary } from '@/lib/auth-client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProtectedLayout({ children }: PropsWithChildren) {
   if (!(await isAuthenticated())) {
     redirect('/auth/login')

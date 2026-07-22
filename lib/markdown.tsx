@@ -275,6 +275,17 @@ function parseMarkdownBlocks(content: string): MarkdownBlock[] {
       continue
     }
 
+    const htmlHeadingMatch = /^<h([1-6])(?:\s[^>]*)?>([\s\S]*)<\/h\1>$/i.exec(line)
+    if (htmlHeadingMatch) {
+      flushAll()
+      blocks.push({
+        type: 'heading',
+        level: Number(htmlHeadingMatch[1]) as HeadingLevel,
+        content: htmlHeadingMatch[2],
+      })
+      continue
+    }
+
     const unorderedMatch = /^[-*]\s+(.*)$/.exec(line)
     if (unorderedMatch) {
       flushParagraph()
