@@ -66,7 +66,7 @@ export function ImageSlider({ initialImages }: { initialImages?: Doc<'sliderImag
               </span>
             
             <p className="mt-3 max-w-lg text-base text-slate-400 md:text-lg">
-              Conveniently order authentic medicines online and receive them with speed and care <br>
+              Conveniently order authentic medicines online and receive them with speed and care
               For any Medicine related inquiry please email us : support@geturpill.com
             </p>
 
