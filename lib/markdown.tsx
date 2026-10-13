@@ -312,8 +312,8 @@ function parseMarkdownBlocks(content: string): MarkdownBlock[] {
 }
 
 const headingClasses: Record<HeadingLevel, string> = {
-  1: 'mt-5 text-2xl font-bold text-slate-900',
-  2: 'mt-5 text-1xl font-bold text-slate-900',
+  1: 'mt-5 text-2xl font-semibold text-slate-900',
+  2: 'mt-5 text-1xl font-semibold text-slate-900',
   3: 'mt-4 text-1xl font-semibold text-slate-900',
   4: 'mt-4 text-1xl font-semibold text-slate-900',
   5: 'mt-3 text-1xl font-semibold text-slate-900',
