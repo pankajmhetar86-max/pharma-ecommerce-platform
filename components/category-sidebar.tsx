@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { ChevronDown, LayoutGrid, Star, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { categoryUrl } from '@/lib/category-url'
 
 type CategoryLike = {
   _id?: string
@@ -94,9 +96,12 @@ export function CategorySidebar({
                 const isActive = selectedView === category.name
                 return (
                   <li key={category._id ?? category.name}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelect(category.name)}
+                    <Link
+                      href={categoryUrl(category.name)}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        handleSelect(category.name)
+                      }}
                       className={cn(
                         'flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-all duration-150',
                         isActive
@@ -111,7 +116,7 @@ export function CategorySidebar({
                         )}
                       />
                       <span className="truncate">{category.name}</span>
-                    </button>
+                    </Link>
                   </li>
                 )
               })}
