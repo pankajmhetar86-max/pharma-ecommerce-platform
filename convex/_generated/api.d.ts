@@ -19,6 +19,7 @@ import type * as http from "../http.js";
 import type * as media from "../media.js";
 import type * as orders from "../orders.js";
 import type * as pricing from "../pricing.js";
+import type * as productReviews from "../productReviews.js";
 import type * as products from "../products.js";
 import type * as sampleData from "../sampleData.js";
 import type * as seed from "../seed.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   media: typeof media;
   orders: typeof orders;
   pricing: typeof pricing;
+  productReviews: typeof productReviews;
   products: typeof products;
   sampleData: typeof sampleData;
   seed: typeof seed;

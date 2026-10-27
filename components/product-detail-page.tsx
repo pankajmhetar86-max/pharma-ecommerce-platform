@@ -1,3 +1,4 @@
+import { ProductCustomerReviews } from './product-customer-reviews'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import type { Doc } from '@/convex/_generated/dataModel'
@@ -84,6 +85,7 @@ export function ProductDetailPage({ product, initialDosage }: ProductDetailPageP
           <div className="px-5 py-5 prose prose-sm max-w-none">{renderMarkdownContent(product.fullDescription)}</div>
         </section>
       ) : null}
+      <ProductCustomerReviews productName={product.genericName || product.name} reviews={product.customerReviews} />
     </div>
   )
 }

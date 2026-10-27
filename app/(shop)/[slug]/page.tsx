@@ -1,3 +1,4 @@
+import { ProductCustomerReviews } from '@/components/product-customer-reviews'
 import { cache, Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -156,6 +157,7 @@ export default async function ProductSlugPage({ params }: { params: Promise<{ sl
               </div>
             </section>
           )}
+          <ProductCustomerReviews productName={product.genericName || product.name} reviews={product.customerReviews} />
         </div>
       </div>
     </>

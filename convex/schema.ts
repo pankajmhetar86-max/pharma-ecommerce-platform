@@ -1,3 +1,4 @@
+import { customerReviewsValidator } from './productReviews'
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
@@ -72,6 +73,7 @@ export default defineSchema({
     category: v.string(),
     description: v.string(),
     fullDescription: v.optional(v.string()),
+    customerReviews: v.optional(customerReviewsValidator),
     price: v.optional(v.number()),
     unit: v.string(),
     dosageOptions: v.array(v.string()),

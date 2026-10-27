@@ -28,6 +28,7 @@ export type ProductFormData = {
   genericName: string
   category: string
   description: string
+  customerReviews: NonNullable<Doc<'products'>['customerReviews']>
   fullDescription: string
   unit: string
   pricingMatrix: DosagePricing[]
@@ -55,6 +56,7 @@ const EMPTY_FORM: ProductFormData = {
   category: '',
   description: '',
   fullDescription: '',
+  customerReviews: [],
   unit: 'pill',
   pricingMatrix: [],
   image: '',
@@ -104,6 +106,7 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
           category: initial.category,
           description: initial.description,
           fullDescription: initial.fullDescription ?? '',
+          customerReviews: initial.customerReviews ?? [],
           unit: initial.unit,
           pricingMatrix: matrixFromDoc(initial),
           image: initial.image,
@@ -322,6 +325,9 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
     if (!form.name.trim()) return setError('Brand name is required.')
     if (!form.genericName.trim()) return setError('Generic name is required.')
     if (!form.category) return setError('Category is required.')
+    if (form.customerReviews.some((review) => !review.name.trim() || !review.text.trim())) {
+      return setError('Each customer review needs a name and review text.')
+    }
     const seenDosages = new Set<string>()
     for (const dosagePricing of form.pricingMatrix) {
       const dosageName = dosagePricing.dosage.trim()
@@ -627,6 +633,92 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
                 onChange={(e) => set('fullDescription', e.target.value)}
               />
             </div>
+
+            <section className="space-y-3 sm:col-span-2 xl:col-span-3" aria-label="Customer reviews">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800">Customer Reviews</h3>
+                  <p className="text-xs text-slate-500">
+                    Optional. Shown below the product description. Add reviews you have permission to publish.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-teal-700"
+                  onClick={() =>
+                    set('customerReviews', [...form.customerReviews, { name: '', location: '', rating: 5, text: '' }])
+                  }
+                >
+                  Add review
+                </button>
+              </div>
+              {form.customerReviews.map((review, index) => {
+                const updateReview = (fields: Partial<typeof review>) =>
+                  set(
+                    'customerReviews',
+                    form.customerReviews.map((entry, i) => (i === index ? { ...entry, ...fields } : entry)),
+                  )
+                return (
+                  <fieldset key={index} className="space-y-3 rounded-xl border border-slate-200 p-4">
+                    <legend className="px-1 text-sm font-semibold text-slate-700">Review {index + 1}</legend>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <label className={labelClass}>
+                        Customer name *
+                        <input
+                          className={inputClass}
+                          value={review.name}
+                          onChange={(e) => updateReview({ name: e.target.value })}
+                        />
+                      </label>
+                      <label className={labelClass}>
+                        Location
+                        <input
+                          className={inputClass}
+                          placeholder="City, country"
+                          value={review.location}
+                          onChange={(e) => updateReview({ location: e.target.value })}
+                        />
+                      </label>
+                      <label className={labelClass}>
+                        Star rating
+                        <select
+                          className={inputClass}
+                          value={review.rating}
+                          onChange={(e) => updateReview({ rating: Number(e.target.value) as typeof review.rating })}
+                        >
+                          {[1, 2, 3, 4, 5].map((rating) => (
+                            <option key={rating} value={rating}>
+                              {rating} / 5
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <label className={labelClass}>
+                      Review text *
+                      <textarea
+                        className={inputClass}
+                        rows={4}
+                        value={review.text}
+                        onChange={(e) => updateReview({ text: e.target.value })}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-red-600"
+                      onClick={() =>
+                        set(
+                          'customerReviews',
+                          form.customerReviews.filter((_, i) => i !== index),
+                        )
+                      }
+                    >
+                      Remove review
+                    </button>
+                  </fieldset>
+                )
+              })}
+            </section>
 
             {/* Pricing Matrix */}
             <div className="sm:col-span-2 xl:col-span-3">

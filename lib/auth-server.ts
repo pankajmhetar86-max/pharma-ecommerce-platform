@@ -1,3 +1,4 @@
+import { isLocalCaptchaBypassed } from '@/lib/local-captcha'
 import { convexBetterAuthNextJs } from '@convex-dev/better-auth/nextjs'
 import { ConvexHttpClient } from 'convex/browser'
 import { createHmac } from 'crypto'
@@ -187,7 +188,8 @@ export const handler: AuthBridge['handler'] = {
     }
     // CAPTCHA enforcement for sign-in and sign-up endpoints.
     const url = new URL(request.url)
-    if (url.pathname.includes('/sign-in/email') || url.pathname.includes('/sign-up/email')) {
+    const bypassLoginCaptcha = url.pathname.includes('/sign-in/email') && isLocalCaptchaBypassed(url.hostname)
+    if (!bypassLoginCaptcha && (url.pathname.includes('/sign-in/email') || url.pathname.includes('/sign-up/email'))) {
       const captchaCookie = getCaptchaProofFromCookie(request)
       if (!captchaCookie || !verifyCaptchaProof(captchaCookie.proof, captchaCookie.timestampStr)) {
         return new Response('CAPTCHA verification required.', { status: 403 })

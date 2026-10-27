@@ -1,3 +1,4 @@
+import { customerReviewsValidator, normalizeCustomerReviews } from './productReviews'
 import { mutation, query } from './_generated/server'
 import { internal } from './_generated/api'
 import { v } from 'convex/values'
@@ -350,6 +351,7 @@ export const createProduct = mutation({
     category: v.string(),
     description: v.string(),
     fullDescription: v.optional(v.string()),
+    customerReviews: v.optional(customerReviewsValidator),
     unit: v.string(),
     dosageOptions: v.array(v.string()),
     pricingMatrix: pricingMatrixArg,
@@ -369,7 +371,13 @@ export const createProduct = mutation({
     await ensureCategoryExists(ctx, args.category)
     const slug = await resolveSlug(ctx, args.slug || `${args.name} ${args.genericName}`)
     const searchText = `${args.name} ${args.genericName}`.toLowerCase()
-    return ctx.db.insert('products', { ...args, ...pricing, slug, searchText })
+    return ctx.db.insert('products', {
+      ...args,
+      ...pricing,
+      slug,
+      searchText,
+      customerReviews: normalizeCustomerReviews(args.customerReviews),
+    })
   },
 })
 
@@ -381,6 +389,7 @@ export const updateProduct = mutation({
     category: v.string(),
     description: v.string(),
     fullDescription: v.optional(v.string()),
+    customerReviews: v.optional(customerReviewsValidator),
     unit: v.string(),
     dosageOptions: v.array(v.string()),
     pricingMatrix: pricingMatrixArg,
@@ -401,7 +410,13 @@ export const updateProduct = mutation({
     const { id, ...fields } = args
     const slug = await resolveSlug(ctx, fields.slug || `${fields.name} ${fields.genericName}`, id)
     const searchText = `${fields.name} ${fields.genericName}`.toLowerCase()
-    await ctx.db.patch(id, { ...fields, ...pricing, slug, searchText })
+    await ctx.db.patch(id, {
+      ...fields,
+      ...pricing,
+      slug,
+      searchText,
+      customerReviews: normalizeCustomerReviews(fields.customerReviews),
+    })
   },
 })
 

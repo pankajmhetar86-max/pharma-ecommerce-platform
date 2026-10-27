@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import type { Route } from 'next'
-import { FormEvent, useRef, useState } from 'react'
+import { FormEvent, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'
+import { isLocalCaptchaBypassed } from '@/lib/local-captcha'
 import { authClient } from '@/lib/auth-client'
 import { sanitizeNextPath } from '@/lib/utils'
 
@@ -19,34 +20,41 @@ export function LoginForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const turnstileRef = useRef<TurnstileInstance>(null)
+  const [bypassCaptcha, setBypassCaptcha] = useState(false)
+
+  useEffect(() => {
+    setBypassCaptcha(isLocalCaptchaBypassed(window.location.hostname))
+  }, [])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setErrorMessage(null)
 
-    if (!turnstileToken) {
-      setErrorMessage('Please complete the CAPTCHA verification.')
-      return
-    }
-
-    try {
-      const captchaRes = await fetch('/api/verify-captcha', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: turnstileToken }),
-      })
-      const captchaData = (await captchaRes.json()) as { success: boolean }
-      if (!captchaData.success) {
-        setTurnstileToken(null)
-        turnstileRef.current?.reset()
-        setErrorMessage('CAPTCHA verification failed. Please try again.')
+    if (!bypassCaptcha) {
+      if (!turnstileToken) {
+        setErrorMessage('Please complete the CAPTCHA verification.')
         return
       }
-    } catch {
-      setTurnstileToken(null)
-      turnstileRef.current?.reset()
-      setErrorMessage('Unable to verify CAPTCHA. Please try again.')
-      return
+
+      try {
+        const captchaRes = await fetch('/api/verify-captcha', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: turnstileToken }),
+        })
+        const captchaData = (await captchaRes.json()) as { success: boolean }
+        if (!captchaData.success) {
+          setTurnstileToken(null)
+          turnstileRef.current?.reset()
+          setErrorMessage('CAPTCHA verification failed. Please try again.')
+          return
+        }
+      } catch {
+        setTurnstileToken(null)
+        turnstileRef.current?.reset()
+        setErrorMessage('Unable to verify CAPTCHA. Please try again.')
+        return
+      }
     }
 
     await authClient.signIn.email(
@@ -129,7 +137,7 @@ export function LoginForm() {
               />
             </div>
 
-            {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+            {!bypassCaptcha && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
               <Turnstile
                 ref={turnstileRef}
                 siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
