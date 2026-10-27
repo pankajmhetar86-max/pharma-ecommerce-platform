@@ -17,17 +17,15 @@ export function ProductCustomerReviews({
   const review = reviews[activeIndex]
 
   return (
-    <section className="rounded-2xl bg-[#f0e9df] px-4 py-6 sm:px-6" aria-label={`Customer reviews on ${productName}`}>
-      <h2 className="mb-5 text-center text-xl font-bold text-[#996337] md:text-2xl">
-        Customer Reviews on {productName}
-      </h2>
+    <section className="rounded-2xl bg-teal-50 px-4 py-6 sm:px-6" aria-label={`Customer reviews on ${productName}`}>
+      <p className="mb-5 text-center text-xl font-bold text-slate-900 md:text-2xl">Customer Reviews on {productName}</p>
       <div className="flex items-center gap-2 sm:gap-4">
         {reviews.length > 1 && (
           <button
             type="button"
             aria-label="Previous review"
             onClick={() => setIndex((activeIndex + reviews.length - 1) % reviews.length)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#885400] text-white hover:bg-[#684000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-700 text-white transition-colors hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -42,11 +40,11 @@ export function ProductCustomerReviews({
               <Star
                 key={star}
                 aria-hidden="true"
-                className={`h-5 w-5 ${star <= review.rating ? 'fill-[#b58050] text-[#b58050]' : 'text-slate-300'}`}
+                className={`h-5 w-5 ${star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
               />
             ))}
           </div>
-          <figcaption className="font-semibold text-[#996337]">
+          <figcaption className="font-semibold text-teal-700">
             {review.name}
             {review.location ? `, ${review.location}` : ''}
           </figcaption>
@@ -64,7 +62,7 @@ export function ProductCustomerReviews({
             type="button"
             aria-label="Next review"
             onClick={() => setIndex((activeIndex + 1) % reviews.length)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#885400] text-white hover:bg-[#684000] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-700 text-white transition-colors hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
