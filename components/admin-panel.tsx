@@ -34,7 +34,7 @@ import { api } from '@/convex/_generated/api'
 import type { Doc, Id } from '@/convex/_generated/dataModel'
 import { formatPrice } from '@/lib/utils'
 
-type Tab = 'products' | 'orders' | 'slider' | 'categories' | 'users'
+type Tab = 'products' | 'orders' | 'slider' | 'categories' | 'users' | 'deleted'
 
 const ORDER_STATUSES = [
   { value: 'pending_payment', label: 'Pending Payment', color: 'bg-yellow-100 text-yellow-800' },
@@ -101,6 +101,7 @@ export function AdminPanel() {
   const tabs = [
     { id: 'products', icon: Package, label: 'Medicines' },
     { id: 'orders', icon: ClipboardList, label: 'Orders' },
+    { id: 'deleted', icon: Trash2, label: 'Deleted' },
     { id: 'slider', icon: ImageIcon, label: 'Slider' },
     { id: 'categories', icon: Tag, label: 'Categories' },
     ...(isSuperAdmin ? ([{ id: 'users', icon: Users, label: 'Users' }] as const) : []),
@@ -140,6 +141,7 @@ export function AdminPanel() {
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
         {tab === 'products' && <ProductsTab />}
         {tab === 'orders' && <OrdersTab />}
+        {tab === 'deleted' && <DeletedOrdersTab />}
         {tab === 'slider' && <SliderTab />}
         {tab === 'categories' && <CategoriesTab />}
         {tab === 'users' && isSuperAdmin && <UsersTab />}
@@ -464,7 +466,7 @@ function OrdersTab() {
   const handleDelete = async (id: Id<'orders'>) => {
     if (
       !window.confirm(
-        `Delete order #${id.slice(-8)}? This permanently removes the order and its payment proofs from customer and admin history.`,
+        `Delete order #${id.slice(-8)}? This moves the order to Deleted. Its details and payment proofs will remain available for admin review.`,
       )
     )
       return
@@ -867,6 +869,100 @@ function OrdersTab() {
   )
 }
 
+function DeletedOrdersTab() {
+  const deletedOrders = useQuery(api.admin.listDeletedOrders)
+  const [search, setSearch] = useState('')
+  const [viewingId, setViewingId] = useState<Id<'deletedOrders'> | null>(null)
+  const viewing = deletedOrders?.find((entry) => entry._id === viewingId)
+  const query = search.trim().toLowerCase().replace(/^#/, '')
+  const filtered = deletedOrders?.filter(({ order }) =>
+    [order._id, order.billingAddress?.email, order.billingAddress?.firstName, order.billingAddress?.lastName].some(
+      (value) => value?.toLowerCase().includes(query),
+    ),
+  )
+
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Deleted Orders</h2>
+          <p className="text-sm text-slate-500">
+            Review deleted orders and their payment proofs. These records are read only.
+          </p>
+        </div>
+        <input
+          type="search"
+          aria-label="Search deleted orders"
+          placeholder="Search order ID or customer…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm sm:w-72"
+        />
+      </div>
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {deletedOrders === undefined ? (
+          <p className="p-8 text-center text-slate-500">Loading deleted orders…</p>
+        ) : deletedOrders === null ? (
+          <p role="alert" className="p-8 text-center text-slate-500">
+            Admin access required.
+          </p>
+        ) : !filtered?.length ? (
+          <p className="p-8 text-center text-slate-500">
+            {search.trim() ? 'No deleted orders match your search.' : 'No deleted orders yet.'}
+          </p>
+        ) : (
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Order</th>
+                <th className="px-4 py-3">Customer</th>
+                <th className="px-4 py-3">Total</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Deleted</th>
+                <th className="px-4 py-3">Deleted by</th>
+                <th className="px-4 py-3">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filtered.map((entry) => (
+                <tr key={entry._id}>
+                  <td className="px-4 py-3 font-mono">#{entry.order._id.slice(-8).toUpperCase()}</td>
+                  <td className="px-4 py-3">{entry.order.billingAddress?.email ?? entry.order.userId}</td>
+                  <td className="px-4 py-3">{formatPrice(entry.order.total)}</td>
+                  <td className="px-4 py-3">{getStatusDisplay(entry.order.status).label}</td>
+                  <td className="px-4 py-3">
+                    {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(
+                      entry.deletedAt,
+                    )}
+                  </td>
+                  <td className="px-4 py-3">{entry.deletedBy}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => setViewingId(entry._id)}
+                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      {viewing && (
+        <OrderDetailModal
+          key={viewing._id}
+          order={viewing.order}
+          deletedOrderId={viewing._id}
+          onClose={() => setViewingId(null)}
+        />
+      )}
+    </>
+  )
+}
+
 // ── Order Detail Modal ────────────────────────────────────────────────────────
 
 function OrderDetailModal({
@@ -874,16 +970,19 @@ function OrderDetailModal({
   onClose,
   onStatusChange,
   onTrackingSave,
-  updating,
-  trackingSaving,
+  updating = false,
+  trackingSaving = false,
+  deletedOrderId,
 }: {
   order: Doc<'orders'>
   onClose: () => void
-  onStatusChange: (status: Doc<'orders'>['status']) => void
-  onTrackingSave: (trackingWebsite: string, trackingNumber: string) => void
-  updating: boolean
-  trackingSaving: boolean
+  onStatusChange?: (status: Doc<'orders'>['status']) => void
+  onTrackingSave?: (trackingWebsite: string, trackingNumber: string) => void
+  updating?: boolean
+  trackingSaving?: boolean
+  deletedOrderId?: Id<'deletedOrders'>
 }) {
+  const readOnly = Boolean(deletedOrderId)
   const sd = getStatusDisplay(order.status)
   const billing = order.billingAddress
   const [trackingWebsite, setTrackingWebsite] = useState(order.trackingWebsite ?? '')
@@ -891,9 +990,9 @@ function OrderDetailModal({
 
   const paymentProofUrl = useQuery(
     api.admin.getOrderPaymentProofUrl,
-    order.paymentProofStorageId ? { id: order._id } : 'skip',
+    order.paymentProofStorageId ? { id: deletedOrderId ?? order._id } : 'skip',
   )
-  const proofHistory = useQuery(api.admin.getPaymentProofHistory, { id: order._id })
+  const proofHistory = useQuery(api.admin.getPaymentProofHistory, { id: deletedOrderId ?? order._id })
 
   const confirmPayment = useMutation(api.admin.adminConfirmPayment)
   const markPartial = useMutation(api.admin.adminMarkPartialPayment)
@@ -970,7 +1069,10 @@ function OrderDetailModal({
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Order #{order._id.slice(-8).toUpperCase()}</h2>
-            <p className="text-xs text-slate-500">{formatDate(order.createdAt)}</p>
+            <p className="text-xs text-slate-500">
+              {formatDate(order.createdAt)}
+              {readOnly && ' · Deleted — read only'}
+            </p>
           </div>
           <button
             type="button"
@@ -1107,7 +1209,7 @@ function OrderDetailModal({
           )}
 
           {/* Payment Review Actions */}
-          {order.status === 'payment_review' && (
+          {!readOnly && order.status === 'payment_review' && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-blue-700">Review Payment</p>
               {reviewMode === 'none' && (
@@ -1262,27 +1364,29 @@ function OrderDetailModal({
           )}
 
           {/* Update status */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Update Status</p>
-            <div className="flex flex-wrap items-center gap-2">
-              {ORDER_STATUSES.map((s) => (
-                <button
-                  key={s.value}
-                  type="button"
-                  disabled={updating}
-                  onClick={() => onStatusChange(s.value as Doc<'orders'>['status'])}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-all disabled:opacity-50 ${
-                    order.status === s.value
-                      ? `${s.color} ring-2 ring-offset-1 ring-current`
-                      : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100'
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-              {updating && <Loader2 className="h-4 w-4 animate-spin text-teal-500" />}
+          {!readOnly && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Update Status</p>
+              <div className="flex flex-wrap items-center gap-2">
+                {ORDER_STATUSES.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    disabled={updating}
+                    onClick={() => onStatusChange?.(s.value as Doc<'orders'>['status'])}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition-all disabled:opacity-50 ${
+                      order.status === s.value
+                        ? `${s.color} ring-2 ring-offset-1 ring-current`
+                        : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+                {updating && <Loader2 className="h-4 w-4 animate-spin text-teal-500" />}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -1294,7 +1398,7 @@ function OrderDetailModal({
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                onTrackingSave(trackingWebsite, trackingNumber)
+                if (!readOnly) onTrackingSave?.(trackingWebsite, trackingNumber)
               }}
               className="space-y-3"
             >
@@ -1304,6 +1408,7 @@ function OrderDetailModal({
                   <input
                     type="text"
                     value={trackingWebsite}
+                    readOnly={readOnly}
                     onChange={(e) => setTrackingWebsite(e.target.value)}
                     placeholder="e.g. https://carrier.example/track"
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-200"
@@ -1314,6 +1419,7 @@ function OrderDetailModal({
                   <input
                     type="text"
                     value={trackingNumber}
+                    readOnly={readOnly}
                     onChange={(e) => setTrackingNumber(e.target.value)}
                     placeholder="Enter tracking number"
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-200"
@@ -1321,13 +1427,15 @@ function OrderDetailModal({
                 </label>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="submit"
-                  disabled={trackingSaving}
-                  className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-                >
-                  {trackingSaving ? 'Saving...' : 'Save Tracking'}
-                </button>
+                {!readOnly && (
+                  <button
+                    type="submit"
+                    disabled={trackingSaving}
+                    className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                  >
+                    {trackingSaving ? 'Saving...' : 'Save Tracking'}
+                  </button>
+                )}
                 {order.trackingWebsite &&
                   (() => {
                     const safeHref = normalizeTrackingWebsite(order.trackingWebsite)

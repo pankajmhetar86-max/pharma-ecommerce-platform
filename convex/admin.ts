@@ -627,12 +627,21 @@ export const deleteOrder = mutation({
     if (!admin) throw new Error('Not authorized')
     const order = await ctx.db.get(id)
     if (!order) throw new Error('Order not found')
-    const proofIds = new Set([
-      ...(order.paymentProofStorageId ? [order.paymentProofStorageId] : []),
-      ...(order.paymentProofHistory ?? []).map((proof) => proof.storageId),
-    ])
-    for (const storageId of proofIds) await ctx.storage.delete(storageId)
+    await ctx.db.insert('deletedOrders', {
+      order,
+      deletedAt: Date.now(),
+      deletedBy: String(admin.email || admin._id),
+    })
     await ctx.db.delete(id)
+  },
+})
+
+export const listDeletedOrders = query({
+  args: {},
+  handler: async (ctx) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) return null
+    return ctx.db.query('deletedOrders').order('desc').collect()
   },
 })
 
@@ -722,22 +731,24 @@ export const adminRejectPayment = mutation({
 })
 
 export const getOrderPaymentProofUrl = query({
-  args: { id: v.id('orders') },
+  args: { id: v.union(v.id('orders'), v.id('deletedOrders')) },
   handler: async (ctx, args) => {
     const admin = await getAdminUser(ctx)
     if (!admin) return null
-    const order = await ctx.db.get(args.id)
+    const record = await ctx.db.get(args.id)
+    const order = record && ('order' in record ? record.order : record)
     if (!order?.paymentProofStorageId) return null
     return ctx.storage.getUrl(order.paymentProofStorageId)
   },
 })
 
 export const getPaymentProofHistory = query({
-  args: { id: v.id('orders') },
+  args: { id: v.union(v.id('orders'), v.id('deletedOrders')) },
   handler: async (ctx, args) => {
     const admin = await getAdminUser(ctx)
     if (!admin) return null
-    const order = await ctx.db.get(args.id)
+    const record = await ctx.db.get(args.id)
+    const order = record && ('order' in record ? record.order : record)
     if (!order?.paymentProofHistory?.length) return []
     return Promise.all(
       order.paymentProofHistory.map(async (entry) => ({

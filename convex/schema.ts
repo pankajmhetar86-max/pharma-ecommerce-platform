@@ -60,6 +60,58 @@ const dosagePricingValidator = v.object({
   packages: v.array(packageValidator),
 })
 
+const orderValidator = v.object({
+  userId: v.string(),
+  items: v.array(orderItemValidator),
+  status: v.union(
+    v.literal('pending_payment'),
+    v.literal('payment_review'),
+    v.literal('partial_payment'),
+    v.literal('pending'),
+    v.literal('paid'),
+    v.literal('processing'),
+    v.literal('shipped'),
+    v.literal('delivered'),
+    v.literal('cancelled'),
+  ),
+  total: v.number(),
+  createdAt: v.number(),
+  paymentMethod: v.optional(v.union(v.literal('standard'), v.literal('crypto'))),
+  // BTC direct payment fields
+  btcAmountDue: v.optional(v.number()),
+  btcPriceUsd: v.optional(v.number()),
+  btcPriceUpdatedAt: v.optional(v.number()),
+  paymentProofStorageId: v.optional(v.id('_storage')),
+  paymentProofUploadedAt: v.optional(v.number()),
+  lastUploadUrlGeneratedAt: v.optional(v.number()),
+  totalProofUploads: v.optional(v.number()),
+  partialAmountReceived: v.optional(v.number()),
+  partialAmountPending: v.optional(v.number()),
+  partialPaymentDueAt: v.optional(v.number()),
+  adminNote: v.optional(v.string()),
+  trackingWebsite: v.optional(v.string()),
+  trackingNumber: v.optional(v.string()),
+  invoiceUrl: v.optional(v.string()), // legacy: to be removed after migration
+  paymentProofHistory: v.optional(
+    v.array(
+      v.object({
+        storageId: v.id('_storage'),
+        uploadedAt: v.number(),
+        decision: v.union(v.literal('paid'), v.literal('partial_payment'), v.literal('rejected')),
+        decidedAt: v.number(),
+        adminNote: v.optional(v.string()),
+      }),
+    ),
+  ),
+  billingAddress: v.optional(billingAddressValidator),
+  shippingAddress: v.optional(
+    v.union(
+      v.object({ sameAsBilling: v.literal(true) }),
+      v.object({ sameAsBilling: v.literal(false), ...addressValidator.fields }),
+    ),
+  ),
+})
+
 export default defineSchema({
   categories: defineTable({
     name: v.string(),
@@ -106,57 +158,17 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_user_id', ['userId']),
 
-  orders: defineTable({
-    userId: v.string(),
-    items: v.array(orderItemValidator),
-    status: v.union(
-      v.literal('pending_payment'),
-      v.literal('payment_review'),
-      v.literal('partial_payment'),
-      v.literal('pending'),
-      v.literal('paid'),
-      v.literal('processing'),
-      v.literal('shipped'),
-      v.literal('delivered'),
-      v.literal('cancelled'),
-    ),
-    total: v.number(),
-    createdAt: v.number(),
-    paymentMethod: v.optional(v.union(v.literal('standard'), v.literal('crypto'))),
-    // BTC direct payment fields
-    btcAmountDue: v.optional(v.number()),
-    btcPriceUsd: v.optional(v.number()),
-    btcPriceUpdatedAt: v.optional(v.number()),
-    paymentProofStorageId: v.optional(v.id('_storage')),
-    paymentProofUploadedAt: v.optional(v.number()),
-    lastUploadUrlGeneratedAt: v.optional(v.number()),
-    totalProofUploads: v.optional(v.number()),
-    partialAmountReceived: v.optional(v.number()),
-    partialAmountPending: v.optional(v.number()),
-    partialPaymentDueAt: v.optional(v.number()),
-    adminNote: v.optional(v.string()),
-    trackingWebsite: v.optional(v.string()),
-    trackingNumber: v.optional(v.string()),
-    invoiceUrl: v.optional(v.string()), // legacy: to be removed after migration
-    paymentProofHistory: v.optional(
-      v.array(
-        v.object({
-          storageId: v.id('_storage'),
-          uploadedAt: v.number(),
-          decision: v.union(v.literal('paid'), v.literal('partial_payment'), v.literal('rejected')),
-          decidedAt: v.number(),
-          adminNote: v.optional(v.string()),
-        }),
-      ),
-    ),
-    billingAddress: v.optional(billingAddressValidator),
-    shippingAddress: v.optional(
-      v.union(
-        v.object({ sameAsBilling: v.literal(true) }),
-        v.object({ sameAsBilling: v.literal(false), ...addressValidator.fields }),
-      ),
-    ),
-  }).index('by_user_id_and_created_at', ['userId', 'createdAt']),
+  orders: defineTable(orderValidator).index('by_user_id_and_created_at', ['userId', 'createdAt']),
+
+  deletedOrders: defineTable({
+    order: v.object({
+      ...orderValidator.fields,
+      _id: v.id('orders'),
+      _creationTime: v.number(),
+    }),
+    deletedAt: v.number(),
+    deletedBy: v.string(),
+  }),
 
   sliderImages: defineTable({
     url: v.string(),
