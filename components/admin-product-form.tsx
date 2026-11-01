@@ -125,6 +125,7 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
   const [imageMode, setImageMode] = useState<'upload' | 'url'>(initial?.image ? 'url' : 'upload')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const reviewListRef = useRef<HTMLDivElement>(null)
   const [previewSrc, setPreviewSrc] = useState(initial?.image ?? '')
   const [previewLoadError, setPreviewLoadError] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -645,79 +646,93 @@ export function AdminProductForm({ initial, onSubmit, onClose, fullPage }: Props
                 <button
                   type="button"
                   className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-teal-700"
-                  onClick={() =>
+                  onClick={() => {
                     set('customerReviews', [...form.customerReviews, { name: '', location: '', rating: 5, text: '' }])
-                  }
+                    requestAnimationFrame(() => {
+                      const list = reviewListRef.current
+                      if (!list) return
+                      list.scrollTop = list.scrollHeight
+                      list.lastElementChild?.querySelector('input')?.focus({ preventScroll: true })
+                    })
+                  }}
                 >
                   Add review
                 </button>
               </div>
-              {form.customerReviews.map((review, index) => {
-                const updateReview = (fields: Partial<typeof review>) =>
-                  set(
-                    'customerReviews',
-                    form.customerReviews.map((entry, i) => (i === index ? { ...entry, ...fields } : entry)),
+              <div
+                ref={reviewListRef}
+                className="max-h-[32rem] space-y-3 overflow-y-auto overscroll-contain p-1"
+                role="region"
+                aria-label="Review editor list"
+                tabIndex={0}
+              >
+                {form.customerReviews.map((review, index) => {
+                  const updateReview = (fields: Partial<typeof review>) =>
+                    set(
+                      'customerReviews',
+                      form.customerReviews.map((entry, i) => (i === index ? { ...entry, ...fields } : entry)),
+                    )
+                  return (
+                    <fieldset key={index} className="space-y-3 rounded-xl border border-slate-200 p-4">
+                      <legend className="px-1 text-sm font-semibold text-slate-700">Review {index + 1}</legend>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <label className={labelClass}>
+                          Customer name *
+                          <input
+                            className={inputClass}
+                            value={review.name}
+                            onChange={(e) => updateReview({ name: e.target.value })}
+                          />
+                        </label>
+                        <label className={labelClass}>
+                          Location
+                          <input
+                            className={inputClass}
+                            placeholder="City, country"
+                            value={review.location}
+                            onChange={(e) => updateReview({ location: e.target.value })}
+                          />
+                        </label>
+                        <label className={labelClass}>
+                          Star rating
+                          <select
+                            className={inputClass}
+                            value={review.rating}
+                            onChange={(e) => updateReview({ rating: Number(e.target.value) as typeof review.rating })}
+                          >
+                            {[1, 2, 3, 4, 5].map((rating) => (
+                              <option key={rating} value={rating}>
+                                {rating} / 5
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <label className={labelClass}>
+                        Review text *
+                        <textarea
+                          className={inputClass}
+                          rows={4}
+                          value={review.text}
+                          onChange={(e) => updateReview({ text: e.target.value })}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="text-sm font-semibold text-red-600"
+                        onClick={() =>
+                          set(
+                            'customerReviews',
+                            form.customerReviews.filter((_, i) => i !== index),
+                          )
+                        }
+                      >
+                        Remove review
+                      </button>
+                    </fieldset>
                   )
-                return (
-                  <fieldset key={index} className="space-y-3 rounded-xl border border-slate-200 p-4">
-                    <legend className="px-1 text-sm font-semibold text-slate-700">Review {index + 1}</legend>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <label className={labelClass}>
-                        Customer name *
-                        <input
-                          className={inputClass}
-                          value={review.name}
-                          onChange={(e) => updateReview({ name: e.target.value })}
-                        />
-                      </label>
-                      <label className={labelClass}>
-                        Location
-                        <input
-                          className={inputClass}
-                          placeholder="City, country"
-                          value={review.location}
-                          onChange={(e) => updateReview({ location: e.target.value })}
-                        />
-                      </label>
-                      <label className={labelClass}>
-                        Star rating
-                        <select
-                          className={inputClass}
-                          value={review.rating}
-                          onChange={(e) => updateReview({ rating: Number(e.target.value) as typeof review.rating })}
-                        >
-                          {[1, 2, 3, 4, 5].map((rating) => (
-                            <option key={rating} value={rating}>
-                              {rating} / 5
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <label className={labelClass}>
-                      Review text *
-                      <textarea
-                        className={inputClass}
-                        rows={4}
-                        value={review.text}
-                        onChange={(e) => updateReview({ text: e.target.value })}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      className="text-sm font-semibold text-red-600"
-                      onClick={() =>
-                        set(
-                          'customerReviews',
-                          form.customerReviews.filter((_, i) => i !== index),
-                        )
-                      }
-                    >
-                      Remove review
-                    </button>
-                  </fieldset>
-                )
-              })}
+                })}
+              </div>
             </section>
 
             {/* Pricing Matrix */}

@@ -620,6 +620,22 @@ export const deleteCategory = mutation({
 
 // ── Orders (admin) ────────────────────────────────────────────────────────────
 
+export const deleteOrder = mutation({
+  args: { id: v.id('orders') },
+  handler: async (ctx, { id }) => {
+    const admin = await getAdminUser(ctx)
+    if (!admin) throw new Error('Not authorized')
+    const order = await ctx.db.get(id)
+    if (!order) throw new Error('Order not found')
+    const proofIds = new Set([
+      ...(order.paymentProofStorageId ? [order.paymentProofStorageId] : []),
+      ...(order.paymentProofHistory ?? []).map((proof) => proof.storageId),
+    ])
+    for (const storageId of proofIds) await ctx.storage.delete(storageId)
+    await ctx.db.delete(id)
+  },
+})
+
 export const listAllOrders = query({
   args: {},
   handler: async (ctx) => {

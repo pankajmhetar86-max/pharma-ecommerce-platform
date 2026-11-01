@@ -19,7 +19,7 @@ export function CategoryNavigationSidebar({
   const router = useRouter()
 
   const handleSelect = (view: SidebarView) => {
-    router.push(view === 'recommended' || view === 'all' ? '/' : categoryUrl(view))
+    router.push(view === 'recommended' ? '/' : view === 'all' ? '/?view=all' : categoryUrl(view))
   }
 
   return (

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import type { Doc } from '@/convex/_generated/dataModel'
@@ -21,7 +22,13 @@ export function HomePageContent({
   initialCategories?: Category[]
   initialProducts?: Product[]
 }) {
-  const [selectedView, setSelectedView] = useState<SidebarView>('recommended')
+  const searchParams = useSearchParams()
+  const requestedView = searchParams.get('category') || (searchParams.get('view') === 'all' ? 'all' : 'recommended')
+  const [selectedView, setSelectedView] = useState<SidebarView>(requestedView)
+
+  useEffect(() => {
+    setSelectedView(requestedView)
+  }, [requestedView])
 
   const fetchedCategories = useQuery(api.categories.list)
   const recommendedProducts = useQuery(api.products.listRecommended, selectedView === 'recommended' ? {} : 'skip')
@@ -35,7 +42,11 @@ export function HomePageContent({
   const categories = categorySource.map((category) => ({ _id: category._id, name: category.name }))
 
   const heading =
-    selectedView === 'recommended' ? 'Top Selling Products of Bitcoin Online Pharmacy' : selectedView === 'all' ? 'All Products' : selectedView
+    selectedView === 'recommended'
+      ? 'Top Selling Products of Bitcoin Online Pharmacy'
+      : selectedView === 'all'
+        ? 'All Products'
+        : selectedView
 
   const displayProducts =
     selectedView === 'recommended'

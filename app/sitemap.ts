@@ -3,7 +3,6 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { isDisallowed } from '@/lib/seo-config'
 import { SITE_URL } from '@/lib/site-inputs'
-import { categoryUrl } from '@/lib/category-url'
 
 export const revalidate = 3600
 
@@ -22,28 +21,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   let productRoutes: MetadataRoute.Sitemap = []
-  let categoryRoutes: MetadataRoute.Sitemap = []
 
   try {
-    const [products, categories] = await Promise.all([
-      fetchQuery(api.products.listForSitemap),
-      fetchQuery(api.categories.list),
-    ])
+    const products = await fetchQuery(api.products.listForSitemap)
     productRoutes = products.map((product) => ({
       url: `${baseUrl}/${product.slug}`,
       lastModified,
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     }))
-    categoryRoutes = categories.map((category) => ({
-      url: `${baseUrl}${categoryUrl(category.name)}`,
-      lastModified,
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-    }))
   } catch {
     // If Convex is unavailable, fall back to static routes only
   }
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes].filter((entry) => !isDisallowed(entry.url))
+  return [...staticRoutes, ...productRoutes].filter((entry) => !isDisallowed(entry.url))
 }

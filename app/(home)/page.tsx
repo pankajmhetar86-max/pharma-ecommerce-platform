@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
@@ -56,11 +57,13 @@ export default async function HomePage() {
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
         />
       ))}
-      <HomePageContent
-        initialSliderImages={initialSliderImages}
-        initialCategories={initialCategories}
-        initialProducts={initialProducts}
-      />
+      <Suspense>
+        <HomePageContent
+          initialSliderImages={initialSliderImages}
+          initialCategories={initialCategories}
+          initialProducts={initialProducts}
+        />
+      </Suspense>
     </>
   )
 }

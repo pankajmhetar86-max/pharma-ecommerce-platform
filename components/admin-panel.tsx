@@ -457,6 +457,27 @@ function PaymentProofThumb({ orderId }: { orderId: Id<'orders'> }) {
 
 function OrdersTab() {
   const orders = useQuery(api.admin.listAllOrders)
+  const deleteOrder = useMutation(api.admin.deleteOrder)
+  const [deletingId, setDeletingId] = useState<Id<'orders'> | null>(null)
+  const [deleteError, setDeleteError] = useState('')
+
+  const handleDelete = async (id: Id<'orders'>) => {
+    if (
+      !window.confirm(
+        `Delete order #${id.slice(-8)}? This permanently removes the order and its payment proofs from customer and admin history.`,
+      )
+    )
+      return
+    setDeletingId(id)
+    setDeleteError('')
+    try {
+      await deleteOrder({ id })
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Unable to delete order. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
   const updateStatus = useMutation(api.admin.updateOrderStatus)
   const updateTracking = useMutation(api.admin.updateOrderTracking)
   const confirmPayment = useMutation(api.admin.adminConfirmPayment)
@@ -566,6 +587,11 @@ function OrdersTab() {
         </div>
       </div>
 
+      {deleteError && (
+        <p role="alert" className="mb-3 text-sm text-red-600">
+          {deleteError}
+        </p>
+      )}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {orders === undefined || orders === null ? (
           <div className="flex items-center justify-center py-20">
@@ -586,7 +612,7 @@ function OrdersTab() {
                   <th className="px-4 py-3">Total</th>
                   <th className="px-4 py-3">Payment</th>
                   <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Details</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -800,6 +826,20 @@ function OrdersTab() {
                         >
                           <ExternalLink className="h-3 w-3" />
                           View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(order._id)}
+                          disabled={deletingId !== null}
+                          aria-label={`Delete order #${order._id.slice(-8)}`}
+                          className="ml-2 inline-flex items-center gap-1 rounded-full border border-red-200 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {deletingId === order._id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                          Delete
                         </button>
                       </td>
                     </tr>
