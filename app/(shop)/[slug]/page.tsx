@@ -11,7 +11,7 @@ import { CategoryNavigationSidebar } from '@/components/category-navigation-side
 import { buildBreadcrumbSchema, buildProductDetailSchema } from '@/lib/home-schema'
 import { toAbsoluteProductImageUrl, toProductImagePath } from '@/lib/image-url'
 import { renderMarkdownContent } from '@/lib/markdown'
-import { categoryUrl } from '@/lib/category-url'
+import { CategoryButton } from '@/components/category-view-provider'
 
 const getProduct = cache((identifier: string) => fetchQuery(api.products.getBySlugOrId, { identifier }))
 
@@ -67,7 +67,7 @@ export default async function ProductSlugPage({ params }: { params: Promise<{ sl
     buildProductDetailSchema(product),
     buildBreadcrumbSchema([
       { name: 'Home', path: '/' },
-      { name: product.category, path: categoryUrl(product.category) },
+      { name: product.category, path: '/' },
       { name: product.genericName || product.name, path: `/${product.slug ?? slug}` },
     ]),
   ].filter(Boolean)
@@ -101,12 +101,12 @@ export default async function ProductSlugPage({ params }: { params: Promise<{ sl
           {/* Category badge */}
           {product.category && (
             <div>
-              <Link
-                href={categoryUrl(product.category)}
+              <CategoryButton
+                category={product.category}
                 className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-xs font-semibold text-teal-700 transition-colors hover:border-teal-300 hover:bg-teal-100"
               >
                 {product.category}
-              </Link>
+              </CategoryButton>
             </div>
           )}
 

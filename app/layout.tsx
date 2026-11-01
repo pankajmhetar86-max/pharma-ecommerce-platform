@@ -1,3 +1,4 @@
+import { CategoryViewProvider } from '@/components/category-view-provider'
 import type { Metadata } from 'next'
 import './globals.css'
 import { ConvexClientProvider } from './convex-client-provider'
@@ -51,7 +52,9 @@ if('serviceWorker' in navigator){
 }`,
           }}
         />
-        <ConvexClientProvider>{children}</ConvexClientProvider>
+        <ConvexClientProvider>
+          <CategoryViewProvider>{children}</CategoryViewProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   )

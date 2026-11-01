@@ -1,8 +1,7 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { CategorySidebar, type SidebarView } from '@/components/category-sidebar'
-import { categoryUrl } from '@/lib/category-url'
+import { CategorySidebar } from '@/components/category-sidebar'
+import { useCategoryNavigation } from '@/components/category-view-provider'
 
 type Category = {
   _id?: string
@@ -16,11 +15,7 @@ export function CategoryNavigationSidebar({
   categories: Category[]
   activeCategory?: string
 }) {
-  const router = useRouter()
-
-  const handleSelect = (view: SidebarView) => {
-    router.push(view === 'recommended' ? '/' : view === 'all' ? '/?view=all' : categoryUrl(view))
-  }
+  const handleSelect = useCategoryNavigation()
 
   return (
     <CategorySidebar categories={categories} selectedView={activeCategory ?? 'recommended'} onSelect={handleSelect} />

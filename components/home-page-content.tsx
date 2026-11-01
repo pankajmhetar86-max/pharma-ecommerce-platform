@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useCategoryView } from './category-view-provider'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import type { Doc } from '@/convex/_generated/dataModel'
-import { CategorySidebar, type SidebarView } from './category-sidebar'
+import { CategorySidebar } from './category-sidebar'
 import { ImageSlider } from './image-slider'
 import { ProductGrid } from './product-grid'
 
@@ -22,13 +21,7 @@ export function HomePageContent({
   initialCategories?: Category[]
   initialProducts?: Product[]
 }) {
-  const searchParams = useSearchParams()
-  const requestedView = searchParams.get('category') || (searchParams.get('view') === 'all' ? 'all' : 'recommended')
-  const [selectedView, setSelectedView] = useState<SidebarView>(requestedView)
-
-  useEffect(() => {
-    setSelectedView(requestedView)
-  }, [requestedView])
+  const { selectedView, setSelectedView } = useCategoryView()
 
   const fetchedCategories = useQuery(api.categories.list)
   const recommendedProducts = useQuery(api.products.listRecommended, selectedView === 'recommended' ? {} : 'skip')
