@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, type ComponentProps, type ReactNode } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { SidebarView } from './category-sidebar'
 
@@ -45,5 +46,21 @@ export function CategoryButton({
     <button type="button" className={className} onClick={() => selectCategory(category)}>
       {children}
     </button>
+  )
+}
+
+export function SiteNavigationLink({ onNavigate, ...props }: ComponentProps<typeof Link>) {
+  const { setSelectedView } = useCategoryView()
+  return (
+    <Link
+      {...props}
+      onNavigate={(event) => {
+        if (props.href === '/') {
+          setSelectedView('recommended')
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+        }
+        onNavigate?.(event)
+      }}
+    />
   )
 }

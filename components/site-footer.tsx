@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { SiteNavigationLink as Link } from './category-view-provider'
 import { Pill, Mail, Shield } from 'lucide-react'
 import { SITE_NAME } from '@/lib/site-inputs'
 

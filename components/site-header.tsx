@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { SiteNavigationLink as Link } from './category-view-provider'
 import { useEffect, useRef, useState } from 'react'
 import { LogOut, Menu, Pill, Search, ShoppingCart, UserRound, X, ChevronDown } from 'lucide-react'
 import { useQuery } from 'convex/react'
